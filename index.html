@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Graph Explorer</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --panel: #fffaf2;
+      --ink: #1f2a37;
+      --accent: #1e6f5c;
+      --accent-soft: #d9efe8;
+      --line: #d7cdbd;
+      --warn: #b45309;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #fff9ef 0, #fff9ef 18%, transparent 19%),
+        linear-gradient(135deg, #efe6d7, var(--bg));
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(960px, calc(100% - 2rem));
+      margin: 2rem auto;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .hero,
+    .panel {
+      background: rgba(255, 250, 242, 0.95);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(31, 42, 55, 0.08);
+    }
+
+    .hero {
+      padding: 1.5rem;
+    }
+
+    .hero h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(2rem, 4vw, 3.1rem);
+      line-height: 1;
+    }
+
+    .hero p {
+      margin: 0.3rem 0;
+      max-width: 62ch;
+      font-size: 1.03rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+    }
+
+    .panel {
+      padding: 1rem;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      margin-bottom: 0.85rem;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.8rem 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      margin-bottom: 0.85rem;
+    }
+
+    .toggle-row input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .toggle-row label {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem 0.9rem;
+      border: none;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+      margin-bottom: 0.6rem;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    button.secondary {
+      background: #8b6f47;
+    }
+
+    .hint,
+    .status,
+    .property,
+    .list {
+      border-radius: 12px;
+      padding: 0.85rem;
+      background: var(--accent-soft);
+      margin-top: 0.85rem;
+    }
+
+    .status {
+      background: #fff5e6;
+      color: var(--warn);
+      min-height: 3.4rem;
+    }
+
+    .property strong {
+      color: var(--accent);
+    }
+
+    .list {
+      background: #f9f5ee;
+      border: 1px dashed var(--line);
+      font-family: Consolas, monospace;
+      white-space: pre-wrap;
+    }
+
+    .canvas-wrap {
+      min-height: 520px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 520px;
+      display: block;
+      touch-action: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.95)),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 31px,
+          rgba(139, 111, 71, 0.06) 32px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 31px,
+          rgba(139, 111, 71, 0.06) 32px
+        );
+      border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+
+    .legend {
+      margin-top: 0.85rem;
+      font-size: 0.96rem;
+    }
+
+    .footer-note {
+      font-size: 0.95rem;
+      color: #4b5563;
+    }
+
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .canvas-wrap,
+      canvas {
+        min-height: 420px;
+        height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>Mini Graph Explorer</h1>
+      <p>Create a tiny graph, watch a <strong>force-directed layout</strong> settle into place, and check one useful property: <strong>is the graph connected?</strong></p>
+      <p>In this drawing style, nodes push away from each other while edges pull connected nodes together like springs.</p>
+    </section>
+
+    <section class="layout">
+      <aside class="panel">
+        <h2>Build Your Graph</h2>
+
+        <label for="nodeInput">Add a node</label>
+        <input id="nodeInput" type="text" placeholder="Example: A">
+        <button id="addNodeBtn">Add Node</button>
+
+        <label for="deleteNodeInput">Delete a node</label>
+        <input id="deleteNodeInput" type="text" placeholder="Example: A">
+        <button id="deleteNodeBtn" class="secondary">Delete Node</button>
+
+        <label for="fromInput">Edge from</label>
+        <input id="fromInput" type="text" placeholder="Example: A">
+
+        <label for="toInput">Edge to</label>
+        <input id="toInput" type="text" placeholder="Example: B">
+        <button id="addEdgeBtn">Add Edge</button>
+
+        <label for="deleteFromInput">Delete edge from</label>
+        <input id="deleteFromInput" type="text" placeholder="Example: A">
+
+        <label for="deleteToInput">Delete edge to</label>
+        <input id="deleteToInput" type="text" placeholder="Example: B">
+        <button id="deleteEdgeBtn" class="secondary">Delete Edge</button>
+
+        <div class="toggle-row">
+          <input id="labelToggle" type="checkbox" checked>
+          <label for="labelToggle">Show node labels</label>
+        </div>
+
+        <button id="sampleBtn" class="secondary">Load Sample Graph</button>
+        <button id="undoBtn" class="secondary">Undo Last Step</button>
+        <button id="resetBtn" class="secondary">Clear Graph</button>
+
+        <div class="hint">
+          Try nodes like <strong>A</strong>, <strong>B</strong>, and <strong>C</strong>, then add edges such as <strong>A-B</strong> and <strong>B-C</strong>. You can drag nodes after they appear, hide labels, delete parts of the graph, and undo one step at a time.
+        </div>
+
+        <div id="status" class="status">Your graph is empty. Add a node to begin.</div>
+        <div id="propertyBox" class="property"></div>
+        <div id="listBox" class="list"></div>
+      </aside>
+
+      <section class="panel">
+        <h2>Graph View</h2>
+        <div class="canvas-wrap">
+          <canvas id="graphCanvas" width="700" height="520" aria-label="Graph visualization"></canvas>
+        </div>
+        <p class="legend">Each circle is a node. Each line is an undirected edge. The layout moves continuously until the graph settles down.</p>
+        <p class="footer-note">This page uses only HTML, CSS, and JavaScript. The layout is simple on purpose so a beginner can inspect and modify it.</p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const nodes = [];
+    const edges = [];
+    let nextNodeId = 1;
+
+    const nodeInput = document.getElementById("nodeInput");
+    const deleteNodeInput = document.getElementById("deleteNodeInput");
+    const fromInput = document.getElementById("fromInput");
+    const toInput = document.getElementById("toInput");
+    const deleteFromInput = document.getElementById("deleteFromInput");
+    const deleteToInput = document.getElementById("deleteToInput");
+    const addNodeBtn = document.getElementById("addNodeBtn");
+    const deleteNodeBtn = document.getElementById("deleteNodeBtn");
+    const addEdgeBtn = document.getElementById("addEdgeBtn");
+    const deleteEdgeBtn = document.getElementById("deleteEdgeBtn");
+    const sampleBtn = document.getElementById("sampleBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const labelToggle = document.getElementById("labelToggle");
+    const status = document.getElementById("status");
+    const propertyBox = document.getElementById("propertyBox");
+    const listBox = document.getElementById("listBox");
+    const graphCanvas = document.getElementById("graphCanvas");
+    const ctx = graphCanvas.getContext("2d");
+    const historyStack = [];
+    let showLabels = true;
+
+    const physics = {
+      repulsion: 9000,
+      springLength: 130,
+      springStrength: 0.003,
+      damping: 0.92,
+      centerPull: 0.0015,
+      maxSpeed: 8,
+      nodeRadius: 26
+    };
+
+    const pointer = {
+      draggingNode: null,
+      offsetX: 0,
+      offsetY: 0,
+      startSnapshot: null,
+      moved: false
+    };
+
+    function normalizeName(value) {
+      return value.trim();
+    }
+
+    function randomInRange(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function cloneState() {
+      return {
+        nodes: nodes.map((node) => ({ ...node })),
+        edges: edges.map((edge) => ({ ...edge })),
+        nextNodeId,
+        showLabels
+      };
+    }
+
+    function trimHistory() {
+      if (historyStack.length > 40) {
+        historyStack.shift();
+      }
+    }
+
+    function saveHistory() {
+      historyStack.push(cloneState());
+      trimHistory();
+    }
+
+    function restoreState(snapshot) {
+      nodes.length = 0;
+      edges.length = 0;
+
+      for (const node of snapshot.nodes) {
+        nodes.push({ ...node, fixed: false });
+      }
+
+      for (const edge of snapshot.edges) {
+        edges.push({ ...edge });
+      }
+
+      nextNodeId = snapshot.nextNodeId;
+      showLabels = snapshot.showLabels;
+      labelToggle.checked = showLabels;
+      pointer.draggingNode = null;
+      pointer.startSnapshot = null;
+      pointer.moved = false;
+      updateView();
+    }
+
+    function undoLastStep() {
+      if (historyStack.length === 0) {
+        status.textContent = "There is no earlier step to undo.";
+        updateView();
+        return;
+      }
+
+      const previousState = historyStack.pop();
+      restoreState(previousState);
+      status.textContent = "Undid the previous step.";
+      updateView();
+    }
+
+    function findNodeByLabel(label) {
+      return nodes.find((node) => node.label === label);
+    }
+
+    function createNode(label) {
+      const margin = 90;
+      return {
+        id: nextNodeId++,
+        label,
+        x: randomInRange(margin, graphCanvas.width - margin),
+        y: randomInRange(margin, graphCanvas.height - margin),
+        vx: randomInRange(-1, 1),
+        vy: randomInRange(-1, 1),
+        fixed: false
+      };
+    }
+
+    function addNode(name) {
+      const cleanName = normalizeName(name);
+
+      if (!cleanName) {
+        status.textContent = "Please type a node name first.";
+        return;
+      }
+
+      if (findNodeByLabel(cleanName)) {
+        status.textContent = "That node already exists.";
+        return;
+      }
+
+      saveHistory();
+      nodes.push(createNode(cleanName));
+      status.textContent = `Added node "${cleanName}".`;
+      updateView();
+    }
+
+    function addEdge(from, to) {
+      const start = normalizeName(from);
+      const end = normalizeName(to);
+
+      if (!start || !end) {
+        status.textContent = "Type both node names before adding an edge.";
+        return;
+      }
+
+      if (start === end) {
+        status.textContent = "Use two different nodes for an edge.";
+        return;
+      }
+
+      const fromNode = findNodeByLabel(start);
+      const toNode = findNodeByLabel(end);
+
+      if (!fromNode || !toNode) {
+        status.textContent = "Both nodes must exist before you connect them.";
+        return;
+      }
+
+      const edgeKey = [start, end].sort().join("--");
+      const exists = edges.some((edge) => edge.key === edgeKey);
+
+      if (exists) {
+        status.textContent = "That edge already exists.";
+        return;
+      }
+
+      saveHistory();
+      edges.push({ from: start, to: end, key: edgeKey });
+      status.textContent = `Connected "${start}" to "${end}".`;
+      nudgeNodes(fromNode, toNode);
+      updateView();
+    }
+
+    function deleteNode(name) {
+      const cleanName = normalizeName(name);
+
+      if (!cleanName) {
+        status.textContent = "Type the node name you want to delete.";
+        return;
+      }
+
+      const nodeIndex = nodes.findIndex((node) => node.label === cleanName);
+
+      if (nodeIndex === -1) {
+        status.textContent = `Node "${cleanName}" does not exist.`;
+        return;
+      }
+
+      saveHistory();
+      nodes.splice(nodeIndex, 1);
+
+      for (let i = edges.length - 1; i >= 0; i -= 1) {
+        const edge = edges[i];
+        if (edge.from === cleanName || edge.to === cleanName) {
+          edges.splice(i, 1);
+        }
+      }
+
+      status.textContent = `Deleted node "${cleanName}" and its connected edges.`;
+      updateView();
+    }
+
+    function deleteEdge(from, to) {
+      const start = normalizeName(from);
+      const end = normalizeName(to);
+
+      if (!start || !end) {
+        status.textContent = "Type both node names before deleting an edge.";
+        return;
+      }
+
+      const edgeKey = [start, end].sort().join("--");
+      const edgeIndex = edges.findIndex((edge) => edge.key === edgeKey);
+
+      if (edgeIndex === -1) {
+        status.textContent = `Edge "${start}-${end}" does not exist.`;
+        return;
+      }
+
+      saveHistory();
+      edges.splice(edgeIndex, 1);
+      status.textContent = `Deleted edge "${start}-${end}".`;
+      updateView();
+    }
+
+    function setShowLabels(value) {
+      if (showLabels === value) {
+        return;
+      }
+
+      saveHistory();
+      showLabels = value;
+      labelToggle.checked = showLabels;
+      status.textContent = showLabels
+        ? "Node labels are now visible."
+        : "Node labels are now hidden.";
+      updateView();
+    }
+
+    function isConnected() {
+      if (nodes.length === 0) {
+        return false;
+      }
+
+      const neighbors = new Map(nodes.map((node) => [node.label, []]));
+
+      for (const edge of edges) {
+        neighbors.get(edge.from).push(edge.to);
+        neighbors.get(edge.to).push(edge.from);
+      }
+
+      const visited = new Set();
+      const queue = [nodes[0].label];
+      visited.add(nodes[0].label);
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+
+        for (const next of neighbors.get(current)) {
+          if (!visited.has(next)) {
+            visited.add(next);
+            queue.push(next);
+          }
+        }
+      }
+
+      return visited.size === nodes.length;
+    }
+
+    function nudgeNodes(nodeA, nodeB) {
+      const boost = 1.8;
+      nodeA.vx -= boost;
+      nodeA.vy += boost * 0.3;
+      nodeB.vx += boost;
+      nodeB.vy -= boost * 0.3;
+    }
+
+    function clampNode(node) {
+      const radius = physics.nodeRadius;
+      node.x = Math.max(radius, Math.min(graphCanvas.width - radius, node.x));
+      node.y = Math.max(radius, Math.min(graphCanvas.height - radius, node.y));
+    }
+
+    function runForces() {
+      const centerX = graphCanvas.width / 2;
+      const centerY = graphCanvas.height / 2;
+
+      for (let i = 0; i < nodes.length; i += 1) {
+        const a = nodes[i];
+
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const b = nodes[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let distanceSquared = dx * dx + dy * dy;
+
+          if (distanceSquared < 1) {
+            dx = randomInRange(-0.5, 0.5);
+            dy = randomInRange(-0.5, 0.5);
+            distanceSquared = dx * dx + dy * dy;
+          }
+
+          const distance = Math.sqrt(distanceSquared);
+          const force = physics.repulsion / distanceSquared;
+          const fx = (dx / distance) * force;
+          const fy = (dy / distance) * force;
+
+          if (!a.fixed) {
+            a.vx -= fx;
+            a.vy -= fy;
+          }
+
+          if (!b.fixed) {
+            b.vx += fx;
+            b.vy += fy;
+          }
+        }
+      }
+
+      for (const edge of edges) {
+        const fromNode = findNodeByLabel(edge.from);
+        const toNode = findNodeByLabel(edge.to);
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const stretch = distance - physics.springLength;
+        const force = stretch * physics.springStrength;
+        const fx = (dx / distance) * force;
+        const fy = (dy / distance) * force;
+
+        if (!fromNode.fixed) {
+          fromNode.vx += fx;
+          fromNode.vy += fy;
+        }
+
+        if (!toNode.fixed) {
+          toNode.vx -= fx;
+          toNode.vy -= fy;
+        }
+      }
+
+      for (const node of nodes) {
+        if (!node.fixed) {
+          node.vx += (centerX - node.x) * physics.centerPull;
+          node.vy += (centerY - node.y) * physics.centerPull;
+        }
+
+        node.vx *= physics.damping;
+        node.vy *= physics.damping;
+
+        node.vx = Math.max(-physics.maxSpeed, Math.min(physics.maxSpeed, node.vx));
+        node.vy = Math.max(-physics.maxSpeed, Math.min(physics.maxSpeed, node.vy));
+
+        if (!node.fixed) {
+          node.x += node.vx;
+          node.y += node.vy;
+        }
+
+        clampNode(node);
+      }
+    }
+
+    function drawEmptyState() {
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "24px Georgia";
+      ctx.textAlign = "center";
+      ctx.fillText("Your graph will appear here.", graphCanvas.width / 2, graphCanvas.height / 2);
+    }
+
+    function drawEdge(edge) {
+      const fromNode = findNodeByLabel(edge.from);
+      const toNode = findNodeByLabel(edge.to);
+
+      ctx.beginPath();
+      ctx.moveTo(fromNode.x, fromNode.y);
+      ctx.lineTo(toNode.x, toNode.y);
+      ctx.strokeStyle = "#8b6f47";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
+    function drawNode(node) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, physics.nodeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#1e6f5c";
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "700 20px Georgia";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (showLabels) {
+        ctx.fillText(node.label, node.x, node.y + 1);
+      }
+    }
+
+    function renderGraph() {
+      ctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+
+      if (nodes.length === 0) {
+        drawEmptyState();
+        return;
+      }
+
+      for (const edge of edges) {
+        drawEdge(edge);
+      }
+
+      for (const node of nodes) {
+        drawNode(node);
+      }
+    }
+
+    function renderProperty() {
+      if (nodes.length === 0) {
+        propertyBox.innerHTML = "<strong>Connected?</strong> Add some nodes first.";
+        return;
+      }
+
+      const connected = isConnected();
+      propertyBox.innerHTML = connected
+        ? "<strong>Connected?</strong> Yes. Every node can reach every other node."
+        : "<strong>Connected?</strong> No. At least one node is separated from the others.";
+    }
+
+    function renderList() {
+      const nodeText = nodes.length ? nodes.map((node) => node.label).join(", ") : "(none)";
+      const edgeText = edges.length
+        ? edges.map((edge) => `${edge.from} - ${edge.to}`).join("\n")
+        : "(none)";
+
+      listBox.textContent = `Nodes: ${nodeText}\nEdges:\n${edgeText}\nLabels shown: ${showLabels ? "yes" : "no"}`;
+      undoBtn.disabled = historyStack.length === 0;
+    }
+
+    function updateView() {
+      renderGraph();
+      renderProperty();
+      renderList();
+    }
+
+    function clearGraphData() {
+      nodes.length = 0;
+      edges.length = 0;
+      nextNodeId = 1;
+      pointer.draggingNode = null;
+      pointer.startSnapshot = null;
+      pointer.moved = false;
+    }
+
+    function loadSampleGraph() {
+      clearGraphData();
+
+      const sampleNodes = ["A", "B", "C", "D", "E"];
+      for (const label of sampleNodes) {
+        nodes.push(createNode(label));
+      }
+
+      edges.push(
+        { from: "A", to: "B", key: "A--B" },
+        { from: "A", to: "C", key: "A--C" },
+        { from: "B", to: "D", key: "B--D" },
+        { from: "C", to: "D", key: "C--D" },
+        { from: "D", to: "E", key: "D--E" }
+      );
+    }
+
+    function getPointerPosition(event) {
+      const rect = graphCanvas.getBoundingClientRect();
+      const scaleX = graphCanvas.width / rect.width;
+      const scaleY = graphCanvas.height / rect.height;
+
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    function findNodeAtPosition(x, y) {
+      for (let i = nodes.length - 1; i >= 0; i -= 1) {
+        const node = nodes[i];
+        const dx = x - node.x;
+        const dy = y - node.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= physics.nodeRadius) {
+          return node;
+        }
+      }
+
+      return null;
+    }
+
+    function startDragging(event) {
+      const pointerPosition = getPointerPosition(event);
+      const node = findNodeAtPosition(pointerPosition.x, pointerPosition.y);
+
+      if (!node) {
+        return;
+      }
+
+      pointer.draggingNode = node;
+      pointer.offsetX = pointerPosition.x - node.x;
+      pointer.offsetY = pointerPosition.y - node.y;
+      pointer.startSnapshot = cloneState();
+      pointer.moved = false;
+      node.fixed = true;
+      node.vx = 0;
+      node.vy = 0;
+      status.textContent = `Dragging "${node.label}".`;
+    }
+
+    function moveDragging(event) {
+      if (!pointer.draggingNode) {
+        return;
+      }
+
+      const pointerPosition = getPointerPosition(event);
+      pointer.draggingNode.x = pointerPosition.x - pointer.offsetX;
+      pointer.draggingNode.y = pointerPosition.y - pointer.offsetY;
+      clampNode(pointer.draggingNode);
+      pointer.moved = true;
+    }
+
+    function stopDragging() {
+      if (!pointer.draggingNode) {
+        return;
+      }
+
+      pointer.draggingNode.fixed = false;
+      if (pointer.moved && pointer.startSnapshot) {
+        historyStack.push(pointer.startSnapshot);
+        trimHistory();
+      }
+
+      status.textContent = `Released "${pointer.draggingNode.label}". The layout will settle again.`;
+      pointer.draggingNode = null;
+      pointer.startSnapshot = null;
+      pointer.moved = false;
+      updateView();
+    }
+
+    function animate() {
+      if (nodes.length > 0) {
+        runForces();
+      }
+
+      renderGraph();
+      requestAnimationFrame(animate);
+    }
+
+    addNodeBtn.addEventListener("click", () => {
+      addNode(nodeInput.value);
+      nodeInput.value = "";
+      nodeInput.focus();
+    });
+
+    deleteNodeBtn.addEventListener("click", () => {
+      deleteNode(deleteNodeInput.value);
+      deleteNodeInput.value = "";
+      deleteNodeInput.focus();
+    });
+
+    addEdgeBtn.addEventListener("click", () => {
+      addEdge(fromInput.value, toInput.value);
+      toInput.value = "";
+      fromInput.focus();
+    });
+
+    deleteEdgeBtn.addEventListener("click", () => {
+      deleteEdge(deleteFromInput.value, deleteToInput.value);
+      deleteToInput.value = "";
+      deleteFromInput.focus();
+    });
+
+    labelToggle.addEventListener("change", () => {
+      setShowLabels(labelToggle.checked);
+    });
+
+    sampleBtn.addEventListener("click", () => {
+      saveHistory();
+      loadSampleGraph();
+      status.textContent = "Loaded a sample connected graph with a force-directed layout.";
+      updateView();
+    });
+
+    undoBtn.addEventListener("click", undoLastStep);
+
+    resetBtn.addEventListener("click", () => {
+      saveHistory();
+      clearGraphData();
+      status.textContent = "Graph cleared.";
+      propertyBox.textContent = "";
+      listBox.textContent = "";
+      updateView();
+    });
+
+    graphCanvas.addEventListener("pointerdown", startDragging);
+    graphCanvas.addEventListener("pointermove", moveDragging);
+    graphCanvas.addEventListener("pointerup", stopDragging);
+    graphCanvas.addEventListener("pointerleave", stopDragging);
+    graphCanvas.addEventListener("pointercancel", stopDragging);
+
+    updateView();
+    animate();
+  </script>
+</body>
+</html>
