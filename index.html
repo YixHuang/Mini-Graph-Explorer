@@ -30,7 +30,7 @@
     }
 
     .page {
-      width: min(960px, calc(100% - 2rem));
+      width: min(1180px, calc(100% - 2rem));
       margin: 2rem auto;
       display: grid;
       gap: 1rem;
@@ -54,15 +54,9 @@
       line-height: 1;
     }
 
-    .hero p {
-      margin: 0.3rem 0;
-      max-width: 62ch;
-      font-size: 1.03rem;
-    }
-
     .layout {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 300px 1fr;
       gap: 1rem;
     }
 
@@ -82,7 +76,8 @@
       font-weight: 700;
     }
 
-    input {
+    input,
+    textarea {
       width: 100%;
       padding: 0.7rem 0.8rem;
       border: 1px solid var(--line);
@@ -91,6 +86,119 @@
       color: var(--ink);
       font: inherit;
       margin-bottom: 0.85rem;
+    }
+
+    textarea {
+      min-height: 5.4rem;
+      resize: vertical;
+    }
+
+    .prompt-panel {
+      display: grid;
+      gap: 0.9rem;
+      padding: 1rem;
+    }
+
+    .prompt-main {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 0.9rem;
+      align-items: end;
+    }
+
+    .prompt-panel textarea,
+    .dictionary-search {
+      margin-bottom: 0;
+      min-height: 4.2rem;
+    }
+
+    .prompt-panel button {
+      margin-bottom: 0;
+    }
+
+    .primary-controls {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .label-toggle-main {
+      margin-bottom: 0;
+      border-color: rgba(30, 111, 92, 0.3);
+      background: linear-gradient(135deg, #eef8f4, #ffffff);
+    }
+
+    .dictionary {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffaf2;
+      padding: 0.85rem;
+    }
+
+    .dictionary summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .dictionary-search {
+      min-height: auto;
+      margin-top: 0.75rem;
+    }
+
+    .dictionary-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+    }
+
+    .dictionary-entry {
+      border: 1px solid rgba(30, 111, 92, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.78);
+      padding: 0.7rem;
+    }
+
+    .dictionary-entry code {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .dictionary-entry p {
+      margin: 0 0 0.55rem;
+      color: #4b5563;
+      font-size: 0.92rem;
+    }
+
+    .dictionary-entry button {
+      padding: 0.45rem 0.7rem;
+      font-size: 0.9rem;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    .control-grid label,
+    .control-grid input {
+      margin-bottom: 0.45rem;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .color-row input[type="color"] {
+      height: 2.7rem;
+      padding: 0.25rem;
+      margin-bottom: 0;
     }
 
     .toggle-row {
@@ -144,7 +252,6 @@
       background: #8b6f47;
     }
 
-    .hint,
     .status,
     .property,
     .list {
@@ -164,11 +271,67 @@
       color: var(--accent);
     }
 
+    .property-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 0.55rem;
+    }
+
+    .property-card {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 10px;
+      padding: 0.65rem 0.7rem;
+    }
+
+    .property-card span {
+      display: block;
+      color: #4b5563;
+      font-size: 0.86rem;
+    }
+
+    .property-card strong {
+      display: block;
+      margin-top: 0.18rem;
+      color: var(--accent);
+      font-size: 1.02rem;
+    }
+
     .list {
       background: #f9f5ee;
       border: 1px dashed var(--line);
       font-family: Consolas, monospace;
       white-space: pre-wrap;
+    }
+
+    .size-row {
+      margin-bottom: 0.85rem;
+      padding: 0.8rem 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .size-row label {
+      margin-bottom: 0.55rem;
+    }
+
+    .size-row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .size-row output {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .size-row input[type="range"] {
+      margin: 0;
+      accent-color: var(--accent);
     }
 
     .canvas-wrap {
@@ -200,18 +363,12 @@
       border: 1px solid var(--line);
     }
 
-    .legend {
-      margin-top: 0.85rem;
-      font-size: 0.96rem;
-    }
-
-    .footer-note {
-      font-size: 0.95rem;
-      color: #4b5563;
-    }
-
     @media (max-width: 820px) {
       .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .prompt-main {
         grid-template-columns: 1fr;
       }
 
@@ -227,51 +384,96 @@
   <main class="page">
     <section class="hero">
       <h1>Mini Graph Explorer</h1>
-      <p>Create a tiny graph, watch a <strong>force-directed layout</strong> settle into place, and check one useful property: <strong>is the graph connected?</strong></p>
-      <p>In this drawing style, nodes push away from each other while edges pull connected nodes together like springs.</p>
+    </section>
+
+    <section class="panel prompt-panel">
+      <div class="prompt-main">
+        <div>
+          <label for="descriptionInput">Describe a graph</label>
+          <textarea id="descriptionInput" placeholder="Examples: C3, K5, 3K5, complement of C5, Q3, W5, Petersen graph, Cartesian product of C4 and P3"></textarea>
+        </div>
+        <div class="primary-controls">
+          <button id="generateGraphBtn">Generate Graph</button>
+          <div class="toggle-row label-toggle-main">
+            <input id="labelToggle" type="checkbox" checked>
+            <label for="labelToggle">Show vertex labels</label>
+          </div>
+        </div>
+      </div>
+
+      <details class="dictionary" open>
+        <summary>Graph description dictionary</summary>
+        <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, complement, Cartesian product...">
+        <div id="dictionaryList" class="dictionary-list"></div>
+      </details>
     </section>
 
     <section class="layout">
       <aside class="panel">
-        <h2>Build Your Graph</h2>
+        <h2>Manual Edits</h2>
 
-        <label for="nodeInput">Add a node</label>
-        <input id="nodeInput" type="text" placeholder="Example: A">
+        <div class="control-grid">
+          <div>
+            <label for="nodeInput">Add node</label>
+            <input id="nodeInput" type="text" placeholder="A">
+          </div>
+          <div>
+            <label for="deleteNodeInput">Delete node</label>
+            <input id="deleteNodeInput" type="text" placeholder="A">
+          </div>
+        </div>
         <button id="addNodeBtn">Add Node</button>
-
-        <label for="deleteNodeInput">Delete a node</label>
-        <input id="deleteNodeInput" type="text" placeholder="Example: A">
         <button id="deleteNodeBtn" class="secondary">Delete Node</button>
 
-        <label for="fromInput">Edge from</label>
-        <input id="fromInput" type="text" placeholder="Example: A">
-
-        <label for="toInput">Edge to</label>
-        <input id="toInput" type="text" placeholder="Example: B">
+        <div class="control-grid">
+          <div>
+            <label for="fromInput">Edge from</label>
+            <input id="fromInput" type="text" placeholder="A">
+          </div>
+          <div>
+            <label for="toInput">Edge to</label>
+            <input id="toInput" type="text" placeholder="B">
+          </div>
+        </div>
         <button id="addEdgeBtn">Add Edge</button>
 
-        <label for="deleteFromInput">Delete edge from</label>
-        <input id="deleteFromInput" type="text" placeholder="Example: A">
-
-        <label for="deleteToInput">Delete edge to</label>
-        <input id="deleteToInput" type="text" placeholder="Example: B">
+        <div class="control-grid">
+          <div>
+            <label for="deleteFromInput">Delete from</label>
+            <input id="deleteFromInput" type="text" placeholder="A">
+          </div>
+          <div>
+            <label for="deleteToInput">Delete to</label>
+            <input id="deleteToInput" type="text" placeholder="B">
+          </div>
+        </div>
         <button id="deleteEdgeBtn" class="secondary">Delete Edge</button>
 
-        <div class="toggle-row">
-          <input id="labelToggle" type="checkbox" checked>
-          <label for="labelToggle">Show node labels</label>
+        <div class="size-row">
+          <div class="size-row-header">
+            <label for="sizeSlider">Node size</label>
+            <output id="sizeValue" for="sizeSlider">14 px</output>
+          </div>
+          <input id="sizeSlider" type="range" min="3" max="42" step="1" value="14">
+        </div>
+
+        <div class="color-row">
+          <div>
+            <label for="nodeColorInput">Node color</label>
+            <input id="nodeColorInput" type="color" value="#1e6f5c">
+          </div>
+          <div>
+            <label for="edgeColorInput">Edge color</label>
+            <input id="edgeColorInput" type="color" value="#8b6f47">
+          </div>
         </div>
 
         <button id="sampleBtn" class="secondary">Load Sample Graph</button>
         <button id="undoBtn" class="secondary">Undo Last Step</button>
+        <button id="redoBtn" class="secondary">Redo Last Step</button>
         <button id="resetBtn" class="secondary">Clear Graph</button>
 
-        <div class="hint">
-          Try nodes like <strong>A</strong>, <strong>B</strong>, and <strong>C</strong>, then add edges such as <strong>A-B</strong> and <strong>B-C</strong>. You can drag nodes after they appear, hide labels, delete parts of the graph, and undo one step at a time.
-        </div>
-
         <div id="status" class="status">Your graph is empty. Add a node to begin.</div>
-        <div id="propertyBox" class="property"></div>
         <div id="listBox" class="list"></div>
       </aside>
 
@@ -280,8 +482,7 @@
         <div class="canvas-wrap">
           <canvas id="graphCanvas" width="700" height="520" aria-label="Graph visualization"></canvas>
         </div>
-        <p class="legend">Each circle is a node. Each line is an undirected edge. The layout moves continuously until the graph settles down.</p>
-        <p class="footer-note">This page uses only HTML, CSS, and JavaScript. The layout is simple on purpose so a beginner can inspect and modify it.</p>
+        <div id="propertyBox" class="property"></div>
       </section>
     </section>
   </main>
@@ -303,15 +504,34 @@
     const deleteEdgeBtn = document.getElementById("deleteEdgeBtn");
     const sampleBtn = document.getElementById("sampleBtn");
     const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
     const resetBtn = document.getElementById("resetBtn");
     const labelToggle = document.getElementById("labelToggle");
+    const sizeSlider = document.getElementById("sizeSlider");
+    const sizeValue = document.getElementById("sizeValue");
+    const nodeColorInput = document.getElementById("nodeColorInput");
+    const edgeColorInput = document.getElementById("edgeColorInput");
+    const descriptionInput = document.getElementById("descriptionInput");
+    const generateGraphBtn = document.getElementById("generateGraphBtn");
+    const dictionarySearch = document.getElementById("dictionarySearch");
+    const dictionaryList = document.getElementById("dictionaryList");
     const status = document.getElementById("status");
     const propertyBox = document.getElementById("propertyBox");
     const listBox = document.getElementById("listBox");
     const graphCanvas = document.getElementById("graphCanvas");
     const ctx = graphCanvas.getContext("2d");
-    const historyStack = [];
-    let showLabels = true;
+    const undoStack = [];
+    const redoStack = [];
+    const maxExactPropertyVertices = 20;
+    const maxExactEdgeColoringEdges = 28;
+    const hardSearchStepLimit = 120000;
+    const maxGeneratedVertices = 80;
+    const labelPreferenceKey = "miniGraphExplorer.showLabels";
+    let showLabels = loadLabelPreference();
+    let currentGraphName = "Empty graph";
+    let currentGraphMeta = { type: "empty", parts: [] };
+    let nodeColor = "#1e6f5c";
+    let edgeColor = "#8b6f47";
 
     const physics = {
       repulsion: 9000,
@@ -320,7 +540,7 @@
       damping: 0.92,
       centerPull: 0.0015,
       maxSpeed: 8,
-      nodeRadius: 26
+      nodeRadius: 14
     };
 
     const pointer = {
@@ -328,7 +548,8 @@
       offsetX: 0,
       offsetY: 0,
       startSnapshot: null,
-      moved: false
+      moved: false,
+      wasFixed: false
     };
 
     function normalizeName(value) {
@@ -339,24 +560,58 @@
       return min + Math.random() * (max - min);
     }
 
+    function loadLabelPreference() {
+      try {
+        return localStorage.getItem(labelPreferenceKey) !== "false";
+      } catch (error) {
+        return true;
+      }
+    }
+
+    function saveLabelPreference(value) {
+      try {
+        localStorage.setItem(labelPreferenceKey, String(value));
+      } catch (error) {
+        // Ignore storage errors so the app still works in restricted browsers.
+      }
+    }
+
     function cloneState() {
       return {
         nodes: nodes.map((node) => ({ ...node })),
         edges: edges.map((edge) => ({ ...edge })),
         nextNodeId,
-        showLabels
+        showLabels,
+        nodeRadius: physics.nodeRadius,
+        currentGraphName,
+        currentGraphMeta: JSON.parse(JSON.stringify(currentGraphMeta)),
+        nodeColor,
+        edgeColor
       };
     }
 
-    function trimHistory() {
-      if (historyStack.length > 40) {
-        historyStack.shift();
+    function trimStack(stack) {
+      if (stack.length > 40) {
+        stack.shift();
       }
     }
 
-    function saveHistory() {
-      historyStack.push(cloneState());
-      trimHistory();
+    function updateSizeOutput() {
+      sizeValue.textContent = `${physics.nodeRadius} px`;
+    }
+
+    function hexToRgba(hex, alpha) {
+      const cleanHex = hex.replace("#", "");
+      const red = parseInt(cleanHex.slice(0, 2), 16);
+      const green = parseInt(cleanHex.slice(2, 4), 16);
+      const blue = parseInt(cleanHex.slice(4, 6), 16);
+      return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    }
+
+    function saveUndoState() {
+      undoStack.push(cloneState());
+      trimStack(undoStack);
+      redoStack.length = 0;
     }
 
     function restoreState(snapshot) {
@@ -364,7 +619,7 @@
       edges.length = 0;
 
       for (const node of snapshot.nodes) {
-        nodes.push({ ...node, fixed: false });
+        nodes.push({ ...node, fixed: Boolean(node.fixed) });
       }
 
       for (const edge of snapshot.edges) {
@@ -373,23 +628,51 @@
 
       nextNodeId = snapshot.nextNodeId;
       showLabels = snapshot.showLabels;
+      physics.nodeRadius = snapshot.nodeRadius;
+      currentGraphName = snapshot.currentGraphName || "Custom graph";
+      currentGraphMeta = snapshot.currentGraphMeta || { type: "custom" };
+      nodeColor = snapshot.nodeColor || "#1e6f5c";
+      edgeColor = snapshot.edgeColor || "#8b6f47";
       labelToggle.checked = showLabels;
+      saveLabelPreference(showLabels);
+      sizeSlider.value = String(physics.nodeRadius);
+      nodeColorInput.value = nodeColor;
+      edgeColorInput.value = edgeColor;
+      updateSizeOutput();
       pointer.draggingNode = null;
       pointer.startSnapshot = null;
       pointer.moved = false;
+      pointer.wasFixed = false;
       updateView();
     }
 
     function undoLastStep() {
-      if (historyStack.length === 0) {
+      if (undoStack.length === 0) {
         status.textContent = "There is no earlier step to undo.";
         updateView();
         return;
       }
 
-      const previousState = historyStack.pop();
+      redoStack.push(cloneState());
+      trimStack(redoStack);
+      const previousState = undoStack.pop();
       restoreState(previousState);
       status.textContent = "Undid the previous step.";
+      updateView();
+    }
+
+    function redoLastStep() {
+      if (redoStack.length === 0) {
+        status.textContent = "There is no later step to redo.";
+        updateView();
+        return;
+      }
+
+      undoStack.push(cloneState());
+      trimStack(undoStack);
+      const nextState = redoStack.pop();
+      restoreState(nextState);
+      status.textContent = "Redid the previous undo.";
       updateView();
     }
 
@@ -410,6 +693,29 @@
       };
     }
 
+    function makeNodeLabel(index, total) {
+      if (total <= 26) {
+        return String.fromCharCode(65 + index);
+      }
+
+      return `V${index + 1}`;
+    }
+
+    function makeEdgeKey(from, to) {
+      return [from, to].sort().join("--");
+    }
+
+    function addUniqueEdge(edgePairs, from, to, kind = "normal") {
+      if (from === to) {
+        return;
+      }
+
+      const key = `${Math.min(from, to)}--${Math.max(from, to)}`;
+      if (!edgePairs.some((edge) => edge.key === key)) {
+        edgePairs.push({ from, to, key, kind });
+      }
+    }
+
     function addNode(name) {
       const cleanName = normalizeName(name);
 
@@ -423,8 +729,10 @@
         return;
       }
 
-      saveHistory();
+      saveUndoState();
       nodes.push(createNode(cleanName));
+      currentGraphName = "Custom graph";
+      currentGraphMeta = { type: "custom" };
       status.textContent = `Added node "${cleanName}".`;
       updateView();
     }
@@ -451,7 +759,7 @@
         return;
       }
 
-      const edgeKey = [start, end].sort().join("--");
+      const edgeKey = makeEdgeKey(start, end);
       const exists = edges.some((edge) => edge.key === edgeKey);
 
       if (exists) {
@@ -459,8 +767,10 @@
         return;
       }
 
-      saveHistory();
+      saveUndoState();
       edges.push({ from: start, to: end, key: edgeKey });
+      currentGraphName = "Custom graph";
+      currentGraphMeta = { type: "custom" };
       status.textContent = `Connected "${start}" to "${end}".`;
       nudgeNodes(fromNode, toNode);
       updateView();
@@ -481,8 +791,10 @@
         return;
       }
 
-      saveHistory();
+      saveUndoState();
       nodes.splice(nodeIndex, 1);
+      currentGraphName = "Custom graph";
+      currentGraphMeta = { type: "custom" };
 
       for (let i = edges.length - 1; i >= 0; i -= 1) {
         const edge = edges[i];
@@ -504,7 +816,7 @@
         return;
       }
 
-      const edgeKey = [start, end].sort().join("--");
+      const edgeKey = makeEdgeKey(start, end);
       const edgeIndex = edges.findIndex((edge) => edge.key === edgeKey);
 
       if (edgeIndex === -1) {
@@ -512,8 +824,10 @@
         return;
       }
 
-      saveHistory();
+      saveUndoState();
       edges.splice(edgeIndex, 1);
+      currentGraphName = "Custom graph";
+      currentGraphMeta = { type: "custom" };
       status.textContent = `Deleted edge "${start}-${end}".`;
       updateView();
     }
@@ -523,9 +837,10 @@
         return;
       }
 
-      saveHistory();
+      saveUndoState();
       showLabels = value;
       labelToggle.checked = showLabels;
+      saveLabelPreference(showLabels);
       status.textContent = showLabels
         ? "Node labels are now visible."
         : "Node labels are now hidden.";
@@ -560,6 +875,1077 @@
       }
 
       return visited.size === nodes.length;
+    }
+
+    function buildAdjacencyInfo() {
+      const indexByLabel = new Map();
+      const adjacencyList = nodes.map(() => []);
+      const adjacencyMasks = nodes.map(() => 0);
+
+      nodes.forEach((node, index) => {
+        indexByLabel.set(node.label, index);
+      });
+
+      for (const edge of edges) {
+        const fromIndex = indexByLabel.get(edge.from);
+        const toIndex = indexByLabel.get(edge.to);
+
+        if (fromIndex === undefined || toIndex === undefined) {
+          continue;
+        }
+
+        adjacencyList[fromIndex].push(toIndex);
+        adjacencyList[toIndex].push(fromIndex);
+        adjacencyMasks[fromIndex] |= 1 << toIndex;
+        adjacencyMasks[toIndex] |= 1 << fromIndex;
+      }
+
+      return { adjacencyList, adjacencyMasks };
+    }
+
+    function isCompleteGraph() {
+      const vertexCount = nodes.length;
+      return edges.length === (vertexCount * (vertexCount - 1)) / 2;
+    }
+
+    function getMinDegree(adjacencyList) {
+      if (adjacencyList.length === 0) {
+        return 0;
+      }
+
+      return Math.min(...adjacencyList.map((neighbors) => neighbors.length));
+    }
+
+    function runMaxFlow(capacity, source, sink) {
+      const size = capacity.length;
+      const residual = capacity.map((row) => row.slice());
+      let flow = 0;
+
+      while (true) {
+        const parent = Array(size).fill(-1);
+        const queue = [source];
+        parent[source] = source;
+
+        for (let head = 0; head < queue.length && parent[sink] === -1; head += 1) {
+          const current = queue[head];
+
+          for (let next = 0; next < size; next += 1) {
+            if (parent[next] === -1 && residual[current][next] > 0) {
+              parent[next] = current;
+              queue.push(next);
+            }
+          }
+        }
+
+        if (parent[sink] === -1) {
+          return flow;
+        }
+
+        let pushed = Infinity;
+        for (let node = sink; node !== source; node = parent[node]) {
+          pushed = Math.min(pushed, residual[parent[node]][node]);
+        }
+
+        for (let node = sink; node !== source; node = parent[node]) {
+          residual[parent[node]][node] -= pushed;
+          residual[node][parent[node]] += pushed;
+        }
+
+        flow += pushed;
+      }
+    }
+
+    function getExactEdgeConnectivity(adjacencyList) {
+      const vertexCount = nodes.length;
+
+      if (vertexCount <= 1 || !isConnected()) {
+        return 0;
+      }
+
+      let best = getMinDegree(adjacencyList);
+
+      for (let target = 1; target < vertexCount; target += 1) {
+        const capacity = Array.from({ length: vertexCount }, () => Array(vertexCount).fill(0));
+
+        for (const edge of edges) {
+          const from = nodes.findIndex((node) => node.label === edge.from);
+          const to = nodes.findIndex((node) => node.label === edge.to);
+          capacity[from][to] += 1;
+          capacity[to][from] += 1;
+        }
+
+        best = Math.min(best, runMaxFlow(capacity, 0, target));
+        if (best === 0) {
+          break;
+        }
+      }
+
+      return best;
+    }
+
+    function getExactVertexConnectivity(adjacencyList) {
+      const vertexCount = nodes.length;
+
+      if (vertexCount <= 1 || !isConnected()) {
+        return 0;
+      }
+
+      if (isCompleteGraph()) {
+        return vertexCount - 1;
+      }
+
+      const edgeSet = new Set();
+      for (const edge of edges) {
+        const from = nodes.findIndex((node) => node.label === edge.from);
+        const to = nodes.findIndex((node) => node.label === edge.to);
+        edgeSet.add(`${Math.min(from, to)}--${Math.max(from, to)}`);
+      }
+
+      let best = getMinDegree(adjacencyList);
+      const splitCount = vertexCount * 2;
+      const infiniteCapacity = vertexCount + 1;
+
+      for (let source = 0; source < vertexCount; source += 1) {
+        for (let sink = source + 1; sink < vertexCount; sink += 1) {
+          if (edgeSet.has(`${source}--${sink}`)) {
+            continue;
+          }
+
+          const capacity = Array.from({ length: splitCount }, () => Array(splitCount).fill(0));
+
+          for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+            capacity[vertex * 2][vertex * 2 + 1] = vertex === source || vertex === sink
+              ? infiniteCapacity
+              : 1;
+          }
+
+          for (const edge of edges) {
+            const from = nodes.findIndex((node) => node.label === edge.from);
+            const to = nodes.findIndex((node) => node.label === edge.to);
+            capacity[from * 2 + 1][to * 2] = infiniteCapacity;
+            capacity[to * 2 + 1][from * 2] = infiniteCapacity;
+          }
+
+          best = Math.min(best, runMaxFlow(capacity, source * 2 + 1, sink * 2));
+          if (best === 0) {
+            return 0;
+          }
+        }
+      }
+
+      return best;
+    }
+
+    function isRemainingConnected(removed, adjacencyList) {
+      const vertexCount = adjacencyList.length;
+      let start = -1;
+      let activeCount = 0;
+
+      for (let index = 0; index < vertexCount; index += 1) {
+        if (!removed.has(index)) {
+          activeCount += 1;
+          if (start === -1) {
+            start = index;
+          }
+        }
+      }
+
+      if (activeCount <= 1) {
+        return false;
+      }
+
+      const visited = new Set([start]);
+      const queue = [start];
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+
+        for (const next of adjacencyList[current]) {
+          if (!removed.has(next) && !visited.has(next)) {
+            visited.add(next);
+            queue.push(next);
+          }
+        }
+      }
+
+      return visited.size === activeCount;
+    }
+
+    function hasDisconnectingVertexSet(size, adjacencyList) {
+      const removed = new Set();
+      const vertexCount = adjacencyList.length;
+
+      function choose(start, depth) {
+        if (depth === size) {
+          return !isRemainingConnected(removed, adjacencyList);
+        }
+
+        const remainingChoices = size - depth;
+        for (let index = start; index <= vertexCount - remainingChoices; index += 1) {
+          removed.add(index);
+          if (choose(index + 1, depth + 1)) {
+            return true;
+          }
+          removed.delete(index);
+        }
+
+        return false;
+      }
+
+      return choose(0, 0);
+    }
+
+    function getVertexConnectivityResult() {
+      const vertexCount = nodes.length;
+
+      if (vertexCount <= 1 || !isConnected()) {
+        return { computed: true, text: "0" };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      return { computed: true, text: String(getExactVertexConnectivity(adjacencyList)) };
+    }
+
+    function getHamiltonianResult() {
+      const vertexCount = nodes.length;
+
+      if (vertexCount < 3) {
+        return { computed: true, text: "No" };
+      }
+
+      if (!isConnected()) {
+        return { computed: true, text: "No" };
+      }
+
+      if (isCompleteGraph()) {
+        return { computed: true, text: "Yes" };
+      }
+
+      const { adjacencyList, adjacencyMasks } = buildAdjacencyInfo();
+      if (adjacencyList.some((neighbors) => neighbors.length < 2)) {
+        return { computed: true, text: "No" };
+      }
+
+      if (vertexCount > maxExactPropertyVertices) {
+        return getHamiltonianSearchResult(adjacencyList);
+      }
+
+      const totalMasks = 1 << vertexCount;
+      const fullMask = totalMasks - 1;
+      const dp = new Uint32Array(totalMasks);
+      dp[1] = 1;
+
+      for (let mask = 1; mask < totalMasks; mask += 2) {
+        let endpoints = dp[mask];
+
+        while (endpoints !== 0) {
+          const endpointBit = endpoints & -endpoints;
+          const endpoint = 31 - Math.clz32(endpointBit);
+          let candidates = adjacencyMasks[endpoint] & ~mask;
+
+          while (candidates !== 0) {
+            const nextBit = candidates & -candidates;
+            dp[mask | nextBit] |= nextBit;
+            candidates -= nextBit;
+          }
+
+          endpoints -= endpointBit;
+        }
+      }
+
+      const cycleEndpoints = dp[fullMask] & adjacencyMasks[0] & ~1;
+      return { computed: true, text: cycleEndpoints !== 0 ? "Yes" : "No" };
+    }
+
+    function getHamiltonianSearchResult(adjacencyList) {
+      if (/^Q_\d+$/.test(currentGraphName) && nodes.length >= 4) {
+        return { computed: true, text: "Yes" };
+      }
+
+      const vertexCount = adjacencyList.length;
+      const path = [0];
+      const used = Array(vertexCount).fill(false);
+      let steps = 0;
+      used[0] = true;
+
+      const orderedNeighbors = adjacencyList.map((neighbors) => (
+        neighbors.slice().sort((a, b) => adjacencyList[a].length - adjacencyList[b].length)
+      ));
+
+      function search(current) {
+        steps += 1;
+        if (steps > hardSearchStepLimit) {
+          return "limit";
+        }
+
+        if (path.length === vertexCount) {
+          return adjacencyList[current].includes(0) ? "found" : "continue";
+        }
+
+        for (const next of orderedNeighbors[current]) {
+          if (used[next]) {
+            continue;
+          }
+
+          used[next] = true;
+          path.push(next);
+          const result = search(next);
+          if (result === "found" || result === "limit") {
+            return result;
+          }
+          path.pop();
+          used[next] = false;
+        }
+
+        return "continue";
+      }
+
+      const result = search(0);
+
+      if (result === "found") {
+        return { computed: true, text: "Yes" };
+      }
+
+      if (result === "limit") {
+        return { computed: false, text: "No cycle found in bounded search" };
+      }
+
+      return { computed: true, text: "No" };
+    }
+
+    function countBits(mask) {
+      let count = 0;
+
+      while (mask !== 0) {
+        mask &= mask - 1;
+        count += 1;
+      }
+
+      return count;
+    }
+
+    function getBipartition(adjacencyList) {
+      const colors = Array(adjacencyList.length).fill(-1);
+
+      for (let start = 0; start < adjacencyList.length; start += 1) {
+        if (colors[start] !== -1) {
+          continue;
+        }
+
+        colors[start] = 0;
+        const queue = [start];
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+
+          for (const next of adjacencyList[current]) {
+            if (colors[next] === -1) {
+              colors[next] = 1 - colors[current];
+              queue.push(next);
+            } else if (colors[next] === colors[current]) {
+              return null;
+            }
+          }
+        }
+      }
+
+      return colors;
+    }
+
+    function getGreedyIndependenceLowerBound(adjacencyList) {
+      const candidates = new Set(adjacencyList.map((_, index) => index));
+      let count = 0;
+
+      while (candidates.size > 0) {
+        let best = null;
+
+        for (const vertex of candidates) {
+          if (best === null || adjacencyList[vertex].filter((neighbor) => candidates.has(neighbor)).length < adjacencyList[best].filter((neighbor) => candidates.has(neighbor)).length) {
+            best = vertex;
+          }
+        }
+
+        count += 1;
+        candidates.delete(best);
+
+        for (const neighbor of adjacencyList[best]) {
+          candidates.delete(neighbor);
+        }
+      }
+
+      return count;
+    }
+
+    function getGreedyChromaticUpperBound(adjacencyList) {
+      const orders = [
+        adjacencyList.map((_, index) => index).sort((a, b) => adjacencyList[b].length - adjacencyList[a].length),
+        adjacencyList.map((_, index) => index).sort((a, b) => adjacencyList[a].length - adjacencyList[b].length),
+        adjacencyList.map((_, index) => index)
+      ];
+      let best = adjacencyList.length === 0 ? 0 : adjacencyList.length;
+
+      for (const order of orders) {
+        const colors = Array(adjacencyList.length).fill(-1);
+        let usedColors = 0;
+
+        for (const vertex of order) {
+          const forbidden = new Set(adjacencyList[vertex].map((neighbor) => colors[neighbor]).filter((color) => color !== -1));
+          let color = 0;
+
+          while (forbidden.has(color)) {
+            color += 1;
+          }
+
+          colors[vertex] = color;
+          usedColors = Math.max(usedColors, color + 1);
+        }
+
+        best = Math.min(best, usedColors);
+      }
+
+      return best;
+    }
+
+    function getIndependenceNumberResult() {
+      const vertexCount = nodes.length;
+
+      if (vertexCount === 0) {
+        return { text: "0" };
+      }
+
+      if (isCompleteGraph()) {
+        return { text: "1" };
+      }
+
+      if (edges.length === 0) {
+        return { text: String(vertexCount) };
+      }
+
+      if (vertexCount > maxExactPropertyVertices) {
+        const { adjacencyList } = buildAdjacencyInfo();
+        return { text: `>= ${getGreedyIndependenceLowerBound(adjacencyList)}` };
+      }
+
+      const { adjacencyMasks } = buildAdjacencyInfo();
+      const fullMask = (1 << vertexCount) - 1;
+      let best = 0;
+
+      for (let mask = 0; mask <= fullMask; mask += 1) {
+        const size = countBits(mask);
+
+        if (size <= best) {
+          continue;
+        }
+
+        let independent = true;
+        for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+          if ((mask & (1 << vertex)) && (adjacencyMasks[vertex] & mask)) {
+            independent = false;
+            break;
+          }
+        }
+
+        if (independent) {
+          best = size;
+        }
+      }
+
+      return { text: String(best) };
+    }
+
+    function canColorVertices(colorCount, adjacencyList) {
+      const order = adjacencyList
+        .map((neighbors, vertex) => ({ vertex, degree: neighbors.length }))
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.vertex);
+      const colors = Array(adjacencyList.length).fill(-1);
+
+      function assign(position) {
+        if (position === order.length) {
+          return true;
+        }
+
+        const vertex = order[position];
+        for (let color = 0; color < colorCount; color += 1) {
+          let allowed = true;
+
+          for (const neighbor of adjacencyList[vertex]) {
+            if (colors[neighbor] === color) {
+              allowed = false;
+              break;
+            }
+          }
+
+          if (allowed) {
+            colors[vertex] = color;
+            if (assign(position + 1)) {
+              return true;
+            }
+            colors[vertex] = -1;
+          }
+        }
+
+        return false;
+      }
+
+      return assign(0);
+    }
+
+    function getChromaticNumberResult() {
+      const vertexCount = nodes.length;
+
+      if (vertexCount === 0) {
+        return { text: "0" };
+      }
+
+      if (isCompleteGraph()) {
+        return { text: String(vertexCount) };
+      }
+
+      if (edges.length === 0) {
+        return { text: "1" };
+      }
+
+      if (vertexCount > maxExactPropertyVertices) {
+        const { adjacencyList } = buildAdjacencyInfo();
+        const bipartition = getBipartition(adjacencyList);
+
+        if (bipartition) {
+          return { text: edges.length === 0 ? "1" : "2" };
+        }
+
+        return { text: `<= ${getGreedyChromaticUpperBound(adjacencyList)}` };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      for (let colorCount = 1; colorCount <= vertexCount; colorCount += 1) {
+        if (canColorVertices(colorCount, adjacencyList)) {
+          return { text: String(colorCount) };
+        }
+      }
+
+      return { text: String(vertexCount) };
+    }
+
+    function isConnectedWithoutEdges(removedEdges) {
+      if (nodes.length <= 1) {
+        return true;
+      }
+
+      const indexByLabel = new Map(nodes.map((node, index) => [node.label, index]));
+      const adjacencyList = nodes.map(() => []);
+
+      edges.forEach((edge, edgeIndex) => {
+        if (removedEdges.has(edgeIndex)) {
+          return;
+        }
+
+        const from = indexByLabel.get(edge.from);
+        const to = indexByLabel.get(edge.to);
+        adjacencyList[from].push(to);
+        adjacencyList[to].push(from);
+      });
+
+      const visited = new Set([0]);
+      const queue = [0];
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+
+        for (const next of adjacencyList[current]) {
+          if (!visited.has(next)) {
+            visited.add(next);
+            queue.push(next);
+          }
+        }
+      }
+
+      return visited.size === nodes.length;
+    }
+
+    function hasDisconnectingEdgeSet(size) {
+      const removed = new Set();
+
+      function choose(start, depth) {
+        if (depth === size) {
+          return !isConnectedWithoutEdges(removed);
+        }
+
+        const remainingChoices = size - depth;
+        for (let edgeIndex = start; edgeIndex <= edges.length - remainingChoices; edgeIndex += 1) {
+          removed.add(edgeIndex);
+          if (choose(edgeIndex + 1, depth + 1)) {
+            return true;
+          }
+          removed.delete(edgeIndex);
+        }
+
+        return false;
+      }
+
+      return choose(0, 0);
+    }
+
+    function getEdgeConnectivityResult() {
+      if (nodes.length <= 1 || !isConnected()) {
+        return { text: "0" };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      return { text: String(getExactEdgeConnectivity(adjacencyList)) };
+    }
+
+    function canColorEdges(colorCount) {
+      const indexedEdges = edges.map((edge, index) => ({ ...edge, index }));
+      const conflicts = indexedEdges.map(() => []);
+
+      for (let i = 0; i < indexedEdges.length; i += 1) {
+        for (let j = i + 1; j < indexedEdges.length; j += 1) {
+          const a = indexedEdges[i];
+          const b = indexedEdges[j];
+
+          if (a.from === b.from || a.from === b.to || a.to === b.from || a.to === b.to) {
+            conflicts[i].push(j);
+            conflicts[j].push(i);
+          }
+        }
+      }
+
+      const order = conflicts
+        .map((neighbors, edgeIndex) => ({ edgeIndex, degree: neighbors.length }))
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.edgeIndex);
+      const colors = Array(edges.length).fill(-1);
+
+      function assign(position) {
+        if (position === order.length) {
+          return true;
+        }
+
+        const edgeIndex = order[position];
+        for (let color = 0; color < colorCount; color += 1) {
+          let allowed = true;
+
+          for (const conflict of conflicts[edgeIndex]) {
+            if (colors[conflict] === color) {
+              allowed = false;
+              break;
+            }
+          }
+
+          if (allowed) {
+            colors[edgeIndex] = color;
+            if (assign(position + 1)) {
+              return true;
+            }
+            colors[edgeIndex] = -1;
+          }
+        }
+
+        return false;
+      }
+
+      return assign(0);
+    }
+
+    function getChromaticIndexResult() {
+      if (edges.length === 0) {
+        return { text: "0" };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const maxDegree = Math.max(...adjacencyList.map((neighbors) => neighbors.length));
+
+      if (isCompleteGraph()) {
+        return { text: String(nodes.length % 2 === 0 ? nodes.length - 1 : nodes.length) };
+      }
+
+      if (edges.length > maxExactEdgeColoringEdges) {
+        return { text: getBipartition(adjacencyList) ? String(maxDegree) : `<= ${maxDegree + 1}` };
+      }
+
+      for (let colorCount = maxDegree; colorCount <= maxDegree + 1; colorCount += 1) {
+        if (canColorEdges(colorCount)) {
+          return { text: String(colorCount) };
+        }
+      }
+
+      return { text: String(maxDegree + 1) };
+    }
+
+    function getGirthResult() {
+      const { adjacencyList } = buildAdjacencyInfo();
+      let best = Infinity;
+
+      for (let start = 0; start < nodes.length; start += 1) {
+        const distance = Array(nodes.length).fill(Infinity);
+        const parent = Array(nodes.length).fill(-1);
+        const queue = [start];
+        distance[start] = 0;
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+
+          for (const next of adjacencyList[current]) {
+            if (distance[next] === Infinity) {
+              distance[next] = distance[current] + 1;
+              parent[next] = current;
+              queue.push(next);
+            } else if (parent[current] !== next && parent[next] !== current) {
+              best = Math.min(best, distance[current] + distance[next] + 1);
+            }
+          }
+        }
+      }
+
+      return { text: best === Infinity ? "Infinity" : String(best) };
+    }
+
+    function bfsDistances(start, adjacencyList) {
+      const distance = Array(adjacencyList.length).fill(Infinity);
+      const queue = [start];
+      distance[start] = 0;
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+
+        for (const next of adjacencyList[current]) {
+          if (distance[next] === Infinity) {
+            distance[next] = distance[current] + 1;
+            queue.push(next);
+          }
+        }
+      }
+
+      return distance;
+    }
+
+    function getDistanceParameters() {
+      if (nodes.length === 0) {
+        return { diameter: "N/A", radius: "N/A" };
+      }
+
+      if (!isConnected()) {
+        return { diameter: "Infinity", radius: "Infinity" };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const eccentricities = adjacencyList.map((_, vertex) => Math.max(...bfsDistances(vertex, adjacencyList)));
+
+      return {
+        diameter: String(Math.max(...eccentricities)),
+        radius: String(Math.min(...eccentricities))
+      };
+    }
+
+    function formatNumber(value) {
+      if (value === Infinity) {
+        return "Infinity";
+      }
+
+      if (Number.isInteger(value)) {
+        return String(value);
+      }
+
+      return String(Math.round(value * 1000) / 1000);
+    }
+
+    function countComponentsAfterRemovedMask(mask, adjacencyList) {
+      const visited = Array(adjacencyList.length).fill(false);
+      let components = 0;
+
+      for (let start = 0; start < adjacencyList.length; start += 1) {
+        if ((mask & (1 << start)) || visited[start]) {
+          continue;
+        }
+
+        components += 1;
+        const queue = [start];
+        visited[start] = true;
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+
+          for (const next of adjacencyList[current]) {
+            if (!(mask & (1 << next)) && !visited[next]) {
+              visited[next] = true;
+              queue.push(next);
+            }
+          }
+        }
+      }
+
+      return components;
+    }
+
+    function getToughnessResult() {
+      if (nodes.length === 0 || !isConnected()) {
+        return { text: "0" };
+      }
+
+      if (isCompleteGraph()) {
+        return { text: "Infinity" };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        const total = currentGraphMeta.parts.reduce((sum, part) => sum + part, 0);
+        const largest = Math.max(...currentGraphMeta.parts);
+        return { text: formatNumber((total - largest) / largest) };
+      }
+
+      if (currentGraphMeta.type === "cube") {
+        return { text: currentGraphMeta.dimension === 1 ? "1" : "1" };
+      }
+
+      if (nodes.length > maxExactPropertyVertices) {
+        const { adjacencyList } = buildAdjacencyInfo();
+        const lowerBound = Math.max(0, getVertexConnectivityResult().text.replace(/[^0-9.]/g, "") / 2 || 0);
+        return { text: `>= ${formatNumber(lowerBound)}` };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const fullMask = (1 << nodes.length) - 1;
+      let best = Infinity;
+
+      for (let mask = 1; mask < fullMask; mask += 1) {
+        const removedCount = countBits(mask);
+        const components = countComponentsAfterRemovedMask(mask, adjacencyList);
+
+        if (components > 1) {
+          best = Math.min(best, removedCount / components);
+        }
+      }
+
+      return { text: formatNumber(best) };
+    }
+
+    function completeGraphGenus(n) {
+      if (n <= 2) {
+        return 0;
+      }
+
+      return Math.ceil(((n - 3) * (n - 4)) / 12);
+    }
+
+    function completeBipartiteGenus(left, right) {
+      return Math.ceil(Math.max(0, (left - 2) * (right - 2)) / 4);
+    }
+
+    function cubeGenus(dimension) {
+      if (dimension <= 3) {
+        return 0;
+      }
+
+      return 1 + (2 ** (dimension - 3)) * (dimension - 4);
+    }
+
+    function genusLowerBound() {
+      if (nodes.length <= 2) {
+        return 0;
+      }
+
+      return Math.max(0, Math.ceil((edges.length - 3 * nodes.length + 6) / 6));
+    }
+
+    function hasCompleteSubgraph(size) {
+      if (nodes.length < size) {
+        return false;
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const adjacencySets = adjacencyList.map((neighbors) => new Set(neighbors));
+      const chosen = [];
+
+      function choose(start) {
+        if (chosen.length === size) {
+          return true;
+        }
+
+        for (let vertex = start; vertex <= nodes.length - (size - chosen.length); vertex += 1) {
+          if (chosen.every((other) => adjacencySets[vertex].has(other))) {
+            chosen.push(vertex);
+            if (choose(vertex + 1)) {
+              return true;
+            }
+            chosen.pop();
+          }
+        }
+
+        return false;
+      }
+
+      return choose(0);
+    }
+
+    function hasK33Subgraph() {
+      if (nodes.length < 6) {
+        return false;
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const adjacencySets = adjacencyList.map((neighbors) => new Set(neighbors));
+      const vertices = adjacencyList.map((_, index) => index);
+
+      function combinations(items, size, start = 0, picked = [], output = []) {
+        if (picked.length === size) {
+          output.push(picked.slice());
+          return output;
+        }
+
+        for (let index = start; index <= items.length - (size - picked.length); index += 1) {
+          picked.push(items[index]);
+          combinations(items, size, index + 1, picked, output);
+          picked.pop();
+        }
+
+        return output;
+      }
+
+      const triples = combinations(vertices, 3);
+      for (let i = 0; i < triples.length; i += 1) {
+        for (let j = i + 1; j < triples.length; j += 1) {
+          const left = triples[i];
+          const right = triples[j];
+
+          if (left.some((vertex) => right.includes(vertex))) {
+            continue;
+          }
+
+          if (left.every((a) => right.every((b) => adjacencySets[a].has(b)))) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function getGenusResult() {
+      if (nodes.length === 0) {
+        return { text: "0" };
+      }
+
+      if (currentGraphMeta.type === "complete") {
+        return { text: String(completeGraphGenus(currentGraphMeta.n)) };
+      }
+
+      if (currentGraphMeta.type === "multipartite" && currentGraphMeta.parts.length === 2) {
+        return { text: String(completeBipartiteGenus(currentGraphMeta.parts[0], currentGraphMeta.parts[1])) };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        return { text: String(genusLowerBound()) };
+      }
+
+      if (["path", "cycle", "wheel", "empty"].includes(currentGraphMeta.type)) {
+        return { text: "0" };
+      }
+
+      if (currentGraphMeta.type === "cube") {
+        return { text: String(cubeGenus(currentGraphMeta.dimension)) };
+      }
+
+      if (currentGraphMeta.type === "petersen") {
+        return { text: "1" };
+      }
+
+      if (currentGraphMeta.type === "cartesian") {
+        const left = currentGraphMeta.left || {};
+        const right = currentGraphMeta.right || {};
+
+        if ((left.type === "path" && right.type === "path") || (left.type === "cycle" && right.type === "path") || (left.type === "path" && right.type === "cycle")) {
+          return { text: "0" };
+        }
+
+        if (left.type === "cycle" && right.type === "cycle") {
+          return { text: "1" };
+        }
+      }
+
+      const lower = genusLowerBound();
+      return { text: lower === 0 && !hasCompleteSubgraph(5) && !hasK33Subgraph() ? "0" : `>= ${lower}` };
+    }
+
+    function getPlanarityResult() {
+      const genus = getGenusResult().text;
+
+      if (genus === "0") {
+        return { text: "Yes" };
+      }
+
+      if (/^\d+$/.test(genus) && Number(genus) > 0) {
+        return { text: "No" };
+      }
+
+      if (hasCompleteSubgraph(5) || hasK33Subgraph() || genus.startsWith(">=") && Number(genus.slice(3)) > 0) {
+        return { text: "No" };
+      }
+
+      return { text: "Likely yes" };
+    }
+
+    function getTraceableResult() {
+      if (nodes.length === 0) {
+        return { text: "No" };
+      }
+
+      if (nodes.length === 1 || isCompleteGraph()) {
+        return { text: "Yes" };
+      }
+
+      if (!isConnected()) {
+        return { text: "No" };
+      }
+
+      if (["path", "cycle", "wheel", "petersen", "cube"].includes(currentGraphMeta.type)) {
+        return { text: "Yes" };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        const total = currentGraphMeta.parts.reduce((sum, part) => sum + part, 0);
+        const largest = Math.max(...currentGraphMeta.parts);
+        return { text: largest <= total - largest + 1 ? "Yes" : "No" };
+      }
+
+      return getHamiltonianPathSearchResult();
+    }
+
+    function getHamiltonianPathSearchResult() {
+      const { adjacencyList } = buildAdjacencyInfo();
+      const vertexCount = nodes.length;
+
+      if (vertexCount <= maxExactPropertyVertices) {
+        for (let start = 0; start < vertexCount; start += 1) {
+          const used = Array(vertexCount).fill(false);
+          used[start] = true;
+
+          function search(current, depth) {
+            if (depth === vertexCount) {
+              return true;
+            }
+
+            for (const next of adjacencyList[current]) {
+              if (!used[next]) {
+                used[next] = true;
+                if (search(next, depth + 1)) {
+                  return true;
+                }
+                used[next] = false;
+              }
+            }
+
+            return false;
+          }
+
+          if (search(start, 1)) {
+            return { text: "Yes" };
+          }
+        }
+
+        return { text: "No" };
+      }
+
+      return { text: getHamiltonianResult().text === "Yes" ? "Yes" : "No path found in bounded search" };
     }
 
     function nudgeNodes(nodeA, nodeB) {
@@ -665,12 +2051,23 @@
     function drawEdge(edge) {
       const fromNode = findNodeByLabel(edge.from);
       const toNode = findNodeByLabel(edge.to);
+      const dx = toNode.x - fromNode.x;
+      const dy = toNode.y - fromNode.y;
+      const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const unitX = dx / distance;
+      const unitY = dy / distance;
+      const startX = fromNode.x + unitX * physics.nodeRadius;
+      const startY = fromNode.y + unitY * physics.nodeRadius;
+      const endX = toNode.x - unitX * physics.nodeRadius;
+      const endY = toNode.y - unitY * physics.nodeRadius;
 
       ctx.beginPath();
-      ctx.moveTo(fromNode.x, fromNode.y);
-      ctx.lineTo(toNode.x, toNode.y);
-      ctx.strokeStyle = "#8b6f47";
-      ctx.lineWidth = 4;
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = edge.kind === "operation" || edge.kind === "complement"
+        ? hexToRgba(edgeColor, 0.42)
+        : edgeColor;
+      ctx.lineWidth = edge.kind === "operation" || edge.kind === "complement" ? 1.5 : 3;
       ctx.lineCap = "round";
       ctx.stroke();
     }
@@ -678,14 +2075,11 @@
     function drawNode(node) {
       ctx.beginPath();
       ctx.arc(node.x, node.y, physics.nodeRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "#1e6f5c";
+      ctx.fillStyle = nodeColor;
       ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "#ffffff";
-      ctx.stroke();
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "700 20px Georgia";
+      ctx.font = `700 ${Math.max(10, Math.round(physics.nodeRadius * 0.9))}px Georgia`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
@@ -712,15 +2106,39 @@
     }
 
     function renderProperty() {
-      if (nodes.length === 0) {
-        propertyBox.innerHTML = "<strong>Connected?</strong> Add some nodes first.";
-        return;
-      }
+      const connected = nodes.length > 0 && isConnected();
+      const vertexConnectivity = getVertexConnectivityResult();
+      const edgeConnectivity = getEdgeConnectivityResult();
+      const hamiltonian = getHamiltonianResult();
+      const independenceNumber = getIndependenceNumberResult();
+      const chromaticNumber = getChromaticNumberResult();
+      const chromaticIndex = getChromaticIndexResult();
+      const girth = getGirthResult();
+      const distances = getDistanceParameters();
+      const toughness = getToughnessResult();
+      const planar = getPlanarityResult();
+      const genus = getGenusResult();
+      const traceable = getTraceableResult();
+      const properties = [
+        ["Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No"],
+        ["Vertex connectivity &kappa;(G)", vertexConnectivity.text],
+        ["Edge connectivity &lambda;(G)", edgeConnectivity.text],
+        ["Toughness", toughness.text],
+        ["Hamiltonian?", hamiltonian.text],
+        ["Traceable?", traceable.text],
+        ["Planar?", planar.text],
+        ["Genus", genus.text],
+        ["Independence number &alpha;(G)", independenceNumber.text],
+        ["Chromatic number &chi;(G)", chromaticNumber.text],
+        ["Chromatic index &chi;&prime;(G)", chromaticIndex.text],
+        ["Girth", girth.text],
+        ["Diameter", distances.diameter],
+        ["Radius", distances.radius]
+      ];
 
-      const connected = isConnected();
-      propertyBox.innerHTML = connected
-        ? "<strong>Connected?</strong> Yes. Every node can reach every other node."
-        : "<strong>Connected?</strong> No. At least one node is separated from the others.";
+      propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value]) => (
+        `<div class="property-card"><span>${name}</span><strong>${value}</strong></div>`
+      )).join("")}</div>`;
     }
 
     function renderList() {
@@ -729,8 +2147,9 @@
         ? edges.map((edge) => `${edge.from} - ${edge.to}`).join("\n")
         : "(none)";
 
-      listBox.textContent = `Nodes: ${nodeText}\nEdges:\n${edgeText}\nLabels shown: ${showLabels ? "yes" : "no"}`;
-      undoBtn.disabled = historyStack.length === 0;
+      listBox.textContent = `Graph: ${currentGraphName}\nNodes: ${nodeText}\nEdges:\n${edgeText}\nLabels shown: ${showLabels ? "yes" : "no"}\nNode size: ${physics.nodeRadius}px`;
+      undoBtn.disabled = undoStack.length === 0;
+      redoBtn.disabled = redoStack.length === 0;
     }
 
     function updateView() {
@@ -743,9 +2162,1110 @@
       nodes.length = 0;
       edges.length = 0;
       nextNodeId = 1;
+      currentGraphName = "Empty graph";
+      currentGraphMeta = { type: "empty", parts: [] };
       pointer.draggingNode = null;
       pointer.startSnapshot = null;
       pointer.moved = false;
+      pointer.wasFixed = false;
+    }
+
+    function setNodeRadius(value) {
+      const nextRadius = Number(value);
+
+      if (!Number.isFinite(nextRadius) || nextRadius === physics.nodeRadius) {
+        updateSizeOutput();
+        return;
+      }
+
+      saveUndoState();
+      physics.nodeRadius = nextRadius;
+      sizeSlider.value = String(nextRadius);
+      updateSizeOutput();
+
+      for (const node of nodes) {
+        clampNode(node);
+      }
+
+      status.textContent = `Node size set to ${nextRadius}px.`;
+      updateView();
+    }
+
+    function setGraphColor(kind, value) {
+      const nextColor = value || (kind === "node" ? nodeColor : edgeColor);
+
+      if (kind === "node" && nextColor !== nodeColor) {
+        saveUndoState();
+        nodeColor = nextColor;
+        nodeColorInput.value = nodeColor;
+        status.textContent = "Node color updated.";
+        updateView();
+      }
+
+      if (kind === "edge" && nextColor !== edgeColor) {
+        saveUndoState();
+        edgeColor = nextColor;
+        edgeColorInput.value = edgeColor;
+        status.textContent = "Edge color updated.";
+        updateView();
+      }
+    }
+
+    const graphDictionaryEntries = [
+      {
+        pattern: "C3, C_3, cycle on 3 vertices",
+        example: "C3",
+        description: "Cycle graph on n vertices."
+      },
+      {
+        pattern: "P4, P_4, path graph on four vertices",
+        example: "P4",
+        description: "Path graph on n vertices."
+      },
+      {
+        pattern: "K5, K_5, complete graph on five vertices",
+        example: "K5",
+        description: "Complete graph on n vertices."
+      },
+      {
+        pattern: "K34, K_{3,4}, complete bipartite graph on 3 and 4 vertices",
+        example: "K_{3,4}",
+        description: "Complete bipartite graph with part sizes m and n."
+      },
+      {
+        pattern: "K_{3,3,4,5}, multipartite graph on 3,3,4,5",
+        example: "K_{3,3,4,5}",
+        description: "Complete multipartite graph with the listed part sizes."
+      },
+      {
+        pattern: "3K5, 3K_5, 3K{5}",
+        example: "3K5",
+        description: "Disjoint union of multiple copies of a complete graph."
+      },
+      {
+        pattern: "Q3, Q_3",
+        example: "Q3",
+        description: "n-dimensional cube graph."
+      },
+      {
+        pattern: "W5, W_5",
+        example: "W5",
+        description: "Wheel graph with a 5-cycle rim plus one hub vertex."
+      },
+      {
+        pattern: "Petersen graph",
+        example: "Petersen graph",
+        description: "The standard Petersen graph."
+      },
+      {
+        pattern: "join of C3 and P4",
+        example: "join of C3 and P4",
+        description: "Join operation: keep both graphs and add all cross edges."
+      },
+      {
+        pattern: "Cartesian product of C4 and P3; Cartesian product of C3, K4 and K2",
+        example: "Cartesian product of C3, K4 and K2",
+        description: "Associative Cartesian product; accepts two or more graph descriptions."
+      },
+      {
+        pattern: "complement of C5, complement graph of Petersen graph",
+        example: "complement of C5",
+        description: "Complement graph on the same vertex set."
+      }
+    ];
+
+    function renderDescriptionDictionary() {
+      const query = dictionarySearch.value.trim().toLowerCase();
+      const visibleEntries = graphDictionaryEntries.filter((entry) => {
+        const haystack = `${entry.pattern} ${entry.description}`.toLowerCase();
+        return !query || haystack.includes(query);
+      });
+
+      dictionaryList.innerHTML = visibleEntries.map((entry) => (
+        `<article class="dictionary-entry">
+          <code>${entry.pattern}</code>
+          <p>${entry.description}</p>
+          <button type="button" class="secondary" data-example="${entry.example}">Use example</button>
+        </article>`
+      )).join("");
+
+      if (visibleEntries.length === 0) {
+        dictionaryList.innerHTML = '<article class="dictionary-entry"><p>No matching graph description found yet.</p></article>';
+      }
+    }
+
+    function normalizeDescription(text) {
+      return text
+        .toLowerCase()
+        .replace(/[{}_.;:!?]/g, " ")
+        .replace(/\b(a|an|the)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function parseSmallNumber(text) {
+      const numberWords = {
+        one: 1,
+        two: 2,
+        three: 3,
+        four: 4,
+        five: 5,
+        six: 6,
+        seven: 7,
+        eight: 8,
+        nine: 9,
+        ten: 10,
+        eleven: 11,
+        twelve: 12,
+        thirteen: 13,
+        fourteen: 14,
+        fifteen: 15,
+        sixteen: 16,
+        seventeen: 17,
+        eighteen: 18,
+        nineteen: 19,
+        twenty: 20
+      };
+
+      const cleanText = text.trim();
+      const numericValue = Number(cleanText);
+
+      if (Number.isInteger(numericValue) && numericValue >= 1 && numericValue <= maxGeneratedVertices) {
+        return numericValue;
+      }
+
+      return numberWords[cleanText] || null;
+    }
+
+    function parseVertexCount(text, defaultValue) {
+      if (!text) {
+        return defaultValue;
+      }
+
+      const count = parseSmallNumber(text.replace(/\bvertices?\b/g, "").trim());
+      if (!count) {
+        throw new Error("I could not understand that vertex count.");
+      }
+
+      return count;
+    }
+
+    function ensureGeneratedSize(size) {
+      if (size > maxGeneratedVertices) {
+        throw new Error(`Please generate graphs with ${maxGeneratedVertices} vertices or fewer.`);
+      }
+    }
+
+    function circlePositions(count, radius = 190, phase = -Math.PI / 2) {
+      const centerX = graphCanvas.width / 2;
+      const centerY = graphCanvas.height / 2;
+
+      if (count === 1) {
+        return [{ x: centerX, y: centerY }];
+      }
+
+      return Array.from({ length: count }, (_, index) => {
+        const angle = phase + (Math.PI * 2 * index) / count;
+        return {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle)
+        };
+      });
+    }
+
+    function linePositions(count) {
+      const left = 90;
+      const right = graphCanvas.width - 90;
+      const y = graphCanvas.height / 2;
+
+      if (count === 1) {
+        return [{ x: graphCanvas.width / 2, y }];
+      }
+
+      return Array.from({ length: count }, (_, index) => ({
+        x: left + ((right - left) * index) / (count - 1),
+        y
+      }));
+    }
+
+    function bipartitePositions(leftCount, rightCount) {
+      const totalRows = Math.max(leftCount, rightCount);
+      const top = 80;
+      const bottom = graphCanvas.height - 80;
+
+      function yFor(index, count) {
+        if (count === 1) {
+          return graphCanvas.height / 2;
+        }
+
+        return top + ((bottom - top) * index) / (count - 1);
+      }
+
+      const positions = [];
+      for (let index = 0; index < leftCount; index += 1) {
+        positions.push({ x: 185, y: yFor(index, totalRows === 1 ? 1 : leftCount) });
+      }
+
+      for (let index = 0; index < rightCount; index += 1) {
+        positions.push({ x: graphCanvas.width - 185, y: yFor(index, totalRows === 1 ? 1 : rightCount) });
+      }
+
+      return positions;
+    }
+
+    function gridPositions(columns, rows, options = {}) {
+      const left = 80;
+      const right = graphCanvas.width - 80;
+      const top = 70;
+      const bottom = graphCanvas.height - 70;
+      const positions = [];
+      const staggerX = options.staggerX || 0;
+      const staggerY = options.staggerY || 0;
+
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          positions.push({
+            x: (columns === 1 ? graphCanvas.width / 2 : left + ((right - left) * column) / (columns - 1)) + (row % 2) * staggerX,
+            y: (rows === 1 ? graphCanvas.height / 2 : top + ((bottom - top) * row) / (rows - 1)) + (column % 2) * staggerY
+          });
+        }
+      }
+
+      return positions;
+    }
+
+    function petersenPositions() {
+      const outer = circlePositions(5, 190, -Math.PI / 2);
+      const inner = circlePositions(5, 82, -Math.PI / 2);
+      return [...outer, ...inner];
+    }
+
+    function cubePositions(dimension) {
+      function q3Template(centerX, centerY, scale = 1) {
+        const frontHalf = 72 * scale;
+        const backHalf = 72 * scale;
+        const offsetX = 42 * scale;
+        const offsetY = -34 * scale;
+        const front = [
+          { x: centerX - frontHalf, y: centerY - frontHalf },
+          { x: centerX + frontHalf, y: centerY - frontHalf },
+          { x: centerX + frontHalf, y: centerY + frontHalf },
+          { x: centerX - frontHalf, y: centerY + frontHalf }
+        ];
+        const back = [
+          { x: centerX - backHalf + offsetX, y: centerY - backHalf + offsetY },
+          { x: centerX + backHalf + offsetX, y: centerY - backHalf + offsetY },
+          { x: centerX + backHalf + offsetX, y: centerY + backHalf + offsetY },
+          { x: centerX - backHalf + offsetX, y: centerY + backHalf + offsetY }
+        ];
+
+        return [
+          front[0],
+          front[1],
+          front[3],
+          front[2],
+          back[0],
+          back[1],
+          back[3],
+          back[2]
+        ];
+      }
+
+      if (dimension === 3) {
+        return q3Template(graphCanvas.width / 2, graphCanvas.height / 2, 1.3);
+      }
+
+      if (dimension === 4) {
+        const leftCube = q3Template(235, 320, 0.96);
+        const rightCube = q3Template(465, 190, 0.96);
+        return [...leftCube, ...rightCube];
+      }
+
+      if (dimension === 5) {
+        const centers = [
+          { x: 210, y: 165 },
+          { x: 490, y: 125 },
+          { x: 230, y: 390 },
+          { x: 510, y: 350 }
+        ];
+
+        return centers.flatMap((center, layer) => (
+          q3Template(center.x + (layer % 2) * 8, center.y, 0.58)
+        ));
+      }
+
+      const vertexCount = 2 ** dimension;
+      const columns = Math.ceil(Math.sqrt(vertexCount));
+      return gridPositions(columns, Math.ceil(vertexCount / columns));
+    }
+
+    function wheelPositions(rimSize) {
+      return [
+        ...circlePositions(rimSize),
+        { x: graphCanvas.width / 2, y: graphCanvas.height / 2 }
+      ];
+    }
+
+    function getPositionBounds(positions) {
+      return positions.reduce((bounds, position) => ({
+        minX: Math.min(bounds.minX, position.x),
+        maxX: Math.max(bounds.maxX, position.x),
+        minY: Math.min(bounds.minY, position.y),
+        maxY: Math.max(bounds.maxY, position.y)
+      }), {
+        minX: Infinity,
+        maxX: -Infinity,
+        minY: Infinity,
+        maxY: -Infinity
+      });
+    }
+
+    function transformPositions(positions, targetBounds) {
+      if (!positions || positions.length === 0) {
+        return [];
+      }
+
+      const source = getPositionBounds(positions);
+      const sourceWidth = Math.max(1, source.maxX - source.minX);
+      const sourceHeight = Math.max(1, source.maxY - source.minY);
+      const targetWidth = Math.max(1, targetBounds.maxX - targetBounds.minX);
+      const targetHeight = Math.max(1, targetBounds.maxY - targetBounds.minY);
+      const scale = Math.min(targetWidth / sourceWidth, targetHeight / sourceHeight);
+      const sourceCenterX = (source.minX + source.maxX) / 2;
+      const sourceCenterY = (source.minY + source.maxY) / 2;
+      const targetCenterX = (targetBounds.minX + targetBounds.maxX) / 2;
+      const targetCenterY = (targetBounds.minY + targetBounds.maxY) / 2;
+
+      return positions.map((position) => ({
+        x: targetCenterX + (position.x - sourceCenterX) * scale,
+        y: targetCenterY + (position.y - sourceCenterY) * scale
+      }));
+    }
+
+    function fallbackPositions(definition) {
+      return definition.positions || circlePositions(definition.vertexCount, Math.min(190, 45 + definition.vertexCount * 18));
+    }
+
+    function joinPositions(leftDefinition, rightDefinition) {
+      const leftPositions = transformPositions(fallbackPositions(leftDefinition), {
+        minX: 55,
+        maxX: 285,
+        minY: 95,
+        maxY: graphCanvas.height - 95
+      });
+      const rightPositions = transformPositions(fallbackPositions(rightDefinition), {
+        minX: graphCanvas.width - 285,
+        maxX: graphCanvas.width - 55,
+        minY: 95,
+        maxY: graphCanvas.height - 95
+      });
+
+      return [...leftPositions, ...rightPositions];
+    }
+
+    function productPositions(leftDefinition, rightDefinition) {
+      const leftSize = leftDefinition.vertexCount;
+      const rightSize = rightDefinition.vertexCount;
+      const leftIsCycle = /^C_\d+$/.test(leftDefinition.displayName);
+      const rightIsCycle = /^C_\d+$/.test(rightDefinition.displayName);
+      const bothSmallCycles = leftIsCycle && rightIsCycle && leftSize <= 5 && rightSize <= 5;
+
+      if (bothSmallCycles) {
+        return gridPositions(leftSize, rightSize, { staggerX: 34, staggerY: 18 });
+      }
+
+      return gridPositions(leftSize, rightSize, { staggerX: 18, staggerY: 10 });
+    }
+
+    function makeDefinition(vertexCount, edgePairs, displayName, positions = null, layout = "standard", meta = { type: "custom" }) {
+      ensureGeneratedSize(vertexCount);
+      const definitionMeta = { ...meta, displayName };
+
+      return {
+        vertexCount,
+        edgePairs,
+        displayName,
+        positions,
+        layout,
+        meta: definitionMeta
+      };
+    }
+
+    function copyClusterPositions(baseDefinition, copies) {
+      const columns = Math.ceil(Math.sqrt(copies));
+      const rows = Math.ceil(copies / columns);
+      const cellWidth = graphCanvas.width / columns;
+      const cellHeight = graphCanvas.height / rows;
+      const basePositions = baseDefinition.positions || circlePositions(baseDefinition.vertexCount);
+      const baseCenterX = graphCanvas.width / 2;
+      const baseCenterY = graphCanvas.height / 2;
+      const targetRadius = Math.max(28, Math.min(cellWidth, cellHeight) * 0.28);
+      const sourceRadius = Math.max(
+        1,
+        ...basePositions.map((position) => Math.hypot(position.x - baseCenterX, position.y - baseCenterY))
+      );
+      const scale = Math.min(1, targetRadius / sourceRadius);
+      const positions = [];
+
+      for (let copy = 0; copy < copies; copy += 1) {
+        const column = copy % columns;
+        const row = Math.floor(copy / columns);
+        const centerX = cellWidth * (column + 0.5);
+        const centerY = cellHeight * (row + 0.5);
+
+        for (const position of basePositions) {
+          positions.push({
+            x: centerX + (position.x - baseCenterX) * scale,
+            y: centerY + (position.y - baseCenterY) * scale
+          });
+        }
+      }
+
+      return positions;
+    }
+
+    function disjointCopiesDefinition(copies, baseDefinition, notationName) {
+      const edgePairs = [];
+
+      for (let copy = 0; copy < copies; copy += 1) {
+        const offset = copy * baseDefinition.vertexCount;
+
+        for (const edge of baseDefinition.edgePairs) {
+          addUniqueEdge(edgePairs, edge.from + offset, edge.to + offset);
+        }
+      }
+
+      return makeDefinition(
+        copies * baseDefinition.vertexCount,
+        edgePairs,
+        notationName || `${copies} copies of ${baseDefinition.displayName}`,
+        copyClusterPositions(baseDefinition, copies),
+        "standard",
+        { type: "copies", copies, base: baseDefinition.meta || { type: "custom" } }
+      );
+    }
+
+    function makeCompleteDefinition(size) {
+      const edgePairs = [];
+
+      for (let from = 0; from < size; from += 1) {
+        for (let to = from + 1; to < size; to += 1) {
+          addUniqueEdge(edgePairs, from, to);
+        }
+      }
+
+      return makeDefinition(size, edgePairs, `K_${size}`, circlePositions(size, Math.min(190, 45 + size * 18)), "standard", { type: "complete", n: size });
+    }
+
+    function makeEmptyDefinition(size) {
+      return makeDefinition(size, [], `${size}K_1`, circlePositions(size, Math.min(190, 45 + size * 18)), "standard", { type: "empty", n: size, parts: Array(size).fill(1) });
+    }
+
+    function makePathDefinition(size) {
+      const edgePairs = [];
+
+      for (let index = 0; index < size - 1; index += 1) {
+        addUniqueEdge(edgePairs, index, index + 1);
+      }
+
+      return makeDefinition(size, edgePairs, `P_${size}`, linePositions(size), "standard", { type: "path", n: size });
+    }
+
+    function makeCycleDefinition(size) {
+      if (size < 3) {
+        throw new Error("Cycle graphs need at least 3 vertices.");
+      }
+
+      const edgePairs = [];
+
+      for (let index = 0; index < size; index += 1) {
+        addUniqueEdge(edgePairs, index, (index + 1) % size);
+      }
+
+      return makeDefinition(size, edgePairs, `C_${size}`, circlePositions(size), "standard", { type: "cycle", n: size });
+    }
+
+    function makeWheelDefinition(rimSize) {
+      if (rimSize < 3) {
+        throw new Error("Wheel graphs need a rim cycle with at least 3 vertices.");
+      }
+
+      const edgePairs = [];
+      const hubIndex = rimSize;
+
+      for (let index = 0; index < rimSize; index += 1) {
+        addUniqueEdge(edgePairs, index, (index + 1) % rimSize);
+        addUniqueEdge(edgePairs, hubIndex, index);
+      }
+
+      return makeDefinition(
+        rimSize + 1,
+        edgePairs,
+        `W_${rimSize}`,
+        wheelPositions(rimSize),
+        "standard",
+        { type: "wheel", rimSize }
+      );
+    }
+
+    function makeCubeDefinition(dimension) {
+      if (dimension < 1) {
+        throw new Error("Cube graphs need dimension at least 1.");
+      }
+
+      const vertexCount = 2 ** dimension;
+      const edgePairs = [];
+
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+        for (let bit = 0; bit < dimension; bit += 1) {
+          const neighbor = vertex ^ (1 << bit);
+          if (vertex < neighbor) {
+            addUniqueEdge(edgePairs, vertex, neighbor);
+          }
+        }
+      }
+
+      return makeDefinition(
+        vertexCount,
+        edgePairs,
+        `Q_${dimension}`,
+        cubePositions(dimension),
+        "standard",
+        { type: "cube", dimension }
+      );
+    }
+
+    function makeCompleteBipartiteDefinition(leftCount, rightCount) {
+      const edgePairs = [];
+
+      for (let left = 0; left < leftCount; left += 1) {
+        for (let right = leftCount; right < leftCount + rightCount; right += 1) {
+          addUniqueEdge(edgePairs, left, right);
+        }
+      }
+
+      return makeDefinition(
+        leftCount + rightCount,
+        edgePairs,
+        `K_{${leftCount},${rightCount}}`,
+        multipartitePositions([leftCount, rightCount]),
+        "standard",
+        { type: "multipartite", parts: [leftCount, rightCount] }
+      );
+    }
+
+    function multipartitePositions(partSizes) {
+      const left = 70;
+      const right = graphCanvas.width - 70;
+      const top = 70;
+      const bottom = graphCanvas.height - 70;
+      const positions = [];
+      const partCount = partSizes.length;
+
+      partSizes.forEach((partSize, partIndex) => {
+        const x = partCount === 1 ? graphCanvas.width / 2 : left + ((right - left) * partIndex) / (partCount - 1);
+
+        for (let index = 0; index < partSize; index += 1) {
+          positions.push({
+            x,
+            y: partSize === 1 ? graphCanvas.height / 2 : top + ((bottom - top) * index) / (partSize - 1)
+          });
+        }
+      });
+
+      return positions;
+    }
+
+    function makeCompleteMultipartiteDefinition(partSizes) {
+      if (partSizes.length < 2) {
+        throw new Error("Multipartite graphs need at least two part sizes.");
+      }
+
+      const vertexCount = partSizes.reduce((sum, partSize) => sum + partSize, 0);
+      const edgePairs = [];
+      const partStart = [];
+      let running = 0;
+
+      for (const partSize of partSizes) {
+        partStart.push(running);
+        running += partSize;
+      }
+
+      for (let firstPart = 0; firstPart < partSizes.length; firstPart += 1) {
+        for (let secondPart = firstPart + 1; secondPart < partSizes.length; secondPart += 1) {
+          for (let first = 0; first < partSizes[firstPart]; first += 1) {
+            for (let second = 0; second < partSizes[secondPart]; second += 1) {
+              addUniqueEdge(edgePairs, partStart[firstPart] + first, partStart[secondPart] + second);
+            }
+          }
+        }
+      }
+
+      return makeDefinition(
+        vertexCount,
+        edgePairs,
+        `K_{${partSizes.join(",")}}`,
+        multipartitePositions(partSizes),
+        "standard",
+        { type: "multipartite", parts: partSizes.slice() }
+      );
+    }
+
+    function makeBalancedBipartiteDefinition(partSize) {
+      return makeCompleteBipartiteDefinition(partSize, partSize);
+    }
+
+    function makePetersenDefinition() {
+      const edgePairs = [];
+
+      for (let index = 0; index < 5; index += 1) {
+        addUniqueEdge(edgePairs, index, (index + 1) % 5);
+        addUniqueEdge(edgePairs, index, index + 5);
+        addUniqueEdge(edgePairs, index + 5, ((index + 2) % 5) + 5);
+      }
+
+      return makeDefinition(10, edgePairs, "Petersen graph", petersenPositions(), "standard", { type: "petersen" });
+    }
+
+    function parseBalancedPartSize(text) {
+      if (!text) {
+        return 3;
+      }
+
+      const cleanText = text.replace(/\bvertices?\b/g, "").trim();
+
+      if (cleanText.includes("+")) {
+        const parts = cleanText.split("+").map((part) => parseSmallNumber(part.trim()));
+        if (parts.length === 2 && parts[0] && parts[0] === parts[1]) {
+          return parts[0];
+        }
+
+        throw new Error("Balanced bipartite graphs need matching part sizes, such as 3+3.");
+      }
+
+      const totalVertices = parseSmallNumber(cleanText);
+      if (totalVertices && totalVertices % 2 === 0) {
+        return totalVertices / 2;
+      }
+
+      throw new Error("Balanced bipartite graphs need an even total size or n+n vertices.");
+    }
+
+    function joinDefinitions(leftDefinition, rightDefinition) {
+      const offset = leftDefinition.vertexCount;
+      const edgePairs = [];
+
+      for (const edge of leftDefinition.edgePairs) {
+        addUniqueEdge(edgePairs, edge.from, edge.to);
+      }
+
+      for (const edge of rightDefinition.edgePairs) {
+        addUniqueEdge(edgePairs, edge.from + offset, edge.to + offset);
+      }
+
+      for (let left = 0; left < leftDefinition.vertexCount; left += 1) {
+        for (let right = 0; right < rightDefinition.vertexCount; right += 1) {
+          addUniqueEdge(edgePairs, left, right + offset, "operation");
+        }
+      }
+
+      return makeDefinition(
+        leftDefinition.vertexCount + rightDefinition.vertexCount,
+        edgePairs,
+        `join of ${flattenedDisplayNames(leftDefinition, rightDefinition, "join").join(", ")}`,
+        joinPositions(leftDefinition, rightDefinition),
+        "standard",
+        {
+          type: "join",
+          left: leftDefinition.meta || { type: "custom" },
+          right: rightDefinition.meta || { type: "custom" }
+        }
+      );
+    }
+
+    function cartesianProductDefinitions(leftDefinition, rightDefinition) {
+      const edgePairs = [];
+      const leftSize = leftDefinition.vertexCount;
+      const rightSize = rightDefinition.vertexCount;
+      const vertexCount = leftSize * rightSize;
+
+      function productIndex(leftIndex, rightIndex) {
+        return rightIndex * leftSize + leftIndex;
+      }
+
+      for (let rightIndex = 0; rightIndex < rightSize; rightIndex += 1) {
+        for (const edge of leftDefinition.edgePairs) {
+          addUniqueEdge(
+            edgePairs,
+            productIndex(edge.from, rightIndex),
+            productIndex(edge.to, rightIndex),
+            "layer"
+          );
+        }
+      }
+
+      for (let leftIndex = 0; leftIndex < leftSize; leftIndex += 1) {
+        for (const edge of rightDefinition.edgePairs) {
+          addUniqueEdge(
+            edgePairs,
+            productIndex(leftIndex, edge.from),
+            productIndex(leftIndex, edge.to),
+            "fiber"
+          );
+        }
+      }
+
+      return makeDefinition(
+        vertexCount,
+        edgePairs,
+        `Cartesian product of ${flattenedDisplayNames(leftDefinition, rightDefinition, "cartesian").join(", ")}`,
+        productPositions(leftDefinition, rightDefinition),
+        "standard",
+        {
+          type: "cartesian",
+          left: leftDefinition.meta || { type: "custom" },
+          right: rightDefinition.meta || { type: "custom" }
+        }
+      );
+    }
+
+    function complementDefinition(baseDefinition) {
+      const existingEdges = new Set(baseDefinition.edgePairs.map((edge) => `${Math.min(edge.from, edge.to)}--${Math.max(edge.from, edge.to)}`));
+      const edgePairs = [];
+
+      for (let from = 0; from < baseDefinition.vertexCount; from += 1) {
+        for (let to = from + 1; to < baseDefinition.vertexCount; to += 1) {
+          const key = `${from}--${to}`;
+
+          if (!existingEdges.has(key)) {
+            addUniqueEdge(edgePairs, from, to, "complement");
+          }
+        }
+      }
+
+      return makeDefinition(
+        baseDefinition.vertexCount,
+        edgePairs,
+        `complement of ${baseDefinition.displayName}`,
+        fallbackPositions(baseDefinition),
+        "standard",
+        { type: "complement", base: baseDefinition.meta || { type: "custom" } }
+      );
+    }
+
+    function splitAssociativeOperands(text) {
+      return text
+        .replace(/\s*,\s*(?:and\s+)?/g, " | ")
+        .replace(/\s+and\s+/g, " | ")
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+
+    function foldGraphOperation(parts, operationName, operation) {
+      if (parts.length < 2) {
+        throw new Error(`${operationName} needs at least two graph descriptions.`);
+      }
+
+      return parts
+        .map((part) => parseGraphPhrase(part))
+        .reduce((current, next) => operation(current, next));
+    }
+
+    function flattenMeta(meta, type) {
+      if (!meta || meta.type !== type) {
+        return [meta || { type: "custom" }];
+      }
+
+      return [...flattenMeta(meta.left, type), ...flattenMeta(meta.right, type)];
+    }
+
+    function displayNameListFromMeta(meta, fallback) {
+      if (!meta) {
+        return [fallback || "graph"];
+      }
+
+      if (meta.displayName) {
+        return [meta.displayName];
+      }
+
+      return [fallback || "graph"];
+    }
+
+    function flattenedDisplayNames(leftDefinition, rightDefinition, type) {
+      const leftItems = leftDefinition.meta && leftDefinition.meta.type === type
+        ? flattenMeta(leftDefinition.meta, type).map((item) => item.displayName || "graph")
+        : [leftDefinition.displayName];
+      const rightItems = rightDefinition.meta && rightDefinition.meta.type === type
+        ? flattenMeta(rightDefinition.meta, type).map((item) => item.displayName || "graph")
+        : [rightDefinition.displayName];
+
+      return [...leftItems, ...rightItems];
+    }
+
+    function parseGraphPhrase(phrase) {
+      const joinPrefix = "join of ";
+      const productPrefix = "cartesian product of ";
+      const complementPrefixes = ["complement graph of ", "complement of "];
+      const compactPhrase = phrase.replace(/\s+/g, "");
+      let compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
+
+      for (const prefix of complementPrefixes) {
+        if (phrase.startsWith(prefix)) {
+          return complementDefinition(parseGraphPhrase(phrase.slice(prefix.length)));
+        }
+      }
+
+      compactMatch = compactPhrase.match(/^(\d+)k_?n$/);
+      if (compactMatch) {
+        throw new Error(`Use a number for n, such as ${compactMatch[1]}K5 for ${compactMatch[1]} copies of K_5.`);
+      }
+
+      compactMatch = compactPhrase.match(/^(\d+)k_?(\d+)$/);
+      if (compactMatch) {
+        const copies = parseSmallNumber(compactMatch[1]);
+        const completeSize = parseSmallNumber(compactMatch[2]);
+
+        if (!copies || !completeSize) {
+          throw new Error("Use notation like 3K5 for three copies of K_5.");
+        }
+
+        return disjointCopiesDefinition(copies, makeCompleteDefinition(completeSize), `${copies}K_${completeSize}`);
+      }
+
+      compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
+      if (compactMatch) {
+        const family = compactMatch[1];
+        const size = parseSmallNumber(compactMatch[2]);
+
+        if (family === "c") {
+          return makeCycleDefinition(size);
+        }
+
+        if (family === "p") {
+          return makePathDefinition(size);
+        }
+
+        if (family === "q") {
+          return makeCubeDefinition(size);
+        }
+
+        return makeWheelDefinition(size);
+      }
+
+      compactMatch = compactPhrase.match(/^k_?(\d+)$/);
+      if (compactMatch) {
+        const completeSize = parseSmallNumber(compactMatch[1]);
+
+        if (completeSize) {
+          return makeCompleteDefinition(completeSize);
+        }
+
+        if (compactMatch[1].length === 2) {
+          return makeCompleteBipartiteDefinition(
+            parseSmallNumber(compactMatch[1][0]),
+            parseSmallNumber(compactMatch[1][1])
+          );
+        }
+
+        throw new Error("Use K5 for a complete graph or K3,4 for a complete bipartite graph.");
+      }
+
+      compactMatch = compactPhrase.match(/^k_?(\d+)[,x](\d+)$/);
+      if (compactMatch) {
+        return makeCompleteBipartiteDefinition(parseSmallNumber(compactMatch[1]), parseSmallNumber(compactMatch[2]));
+      }
+
+      compactMatch = compactPhrase.match(/^k_?(\d+(?:,\d+){2,})$/);
+      if (compactMatch) {
+        return makeCompleteMultipartiteDefinition(compactMatch[1].split(",").map((part) => parseSmallNumber(part)));
+      }
+
+      if (phrase.startsWith(joinPrefix)) {
+        const rest = phrase.slice(joinPrefix.length);
+        return foldGraphOperation(
+          splitAssociativeOperands(rest),
+          "Join",
+          joinDefinitions
+        );
+      }
+
+      if (phrase.startsWith(productPrefix)) {
+        const rest = phrase.slice(productPrefix.length);
+        const twinMatch = rest.match(/^two (cycles?|paths?|complete graphs?|empty graphs?)(?: on (.+))?$/);
+
+        if (twinMatch) {
+          const family = twinMatch[1];
+          const size = parseVertexCount(twinMatch[2], family.includes("cycle") ? 4 : 3);
+          const first = parseGraphPhrase(`${family.replace(/s$/, "")} on ${size} vertices`);
+          const second = parseGraphPhrase(`${family.replace(/s$/, "")} on ${size} vertices`);
+          return cartesianProductDefinitions(first, second);
+        }
+
+        return foldGraphOperation(
+          splitAssociativeOperands(rest),
+          "Cartesian product",
+          cartesianProductDefinitions
+        );
+      }
+
+      let match = phrase.match(/^cartesian product of two (cycles?|paths?|complete graphs?|empty graphs?)(?: on (.+))?$/);
+      if (match) {
+        const family = match[1];
+        const size = parseVertexCount(match[2], family.includes("cycle") ? 4 : 3);
+        const first = parseGraphPhrase(`${family.replace(/s$/, "")} on ${size} vertices`);
+        const second = parseGraphPhrase(`${family.replace(/s$/, "")} on ${size} vertices`);
+        return cartesianProductDefinitions(first, second);
+      }
+
+      if (phrase === "petersen graph" || phrase === "petersen") {
+        return makePetersenDefinition();
+      }
+
+      match = phrase.match(/^(?:cycle|cycle graph)(?: on (.+))?$/);
+      if (match) {
+        return makeCycleDefinition(parseVertexCount(match[1], 5));
+      }
+
+      match = phrase.match(/^(?:path|path graph)(?: on (.+))?$/);
+      if (match) {
+        return makePathDefinition(parseVertexCount(match[1], 5));
+      }
+
+      match = phrase.match(/^c\s+(.+)$/);
+      if (match) {
+        return makeCycleDefinition(parseVertexCount(match[1], 5));
+      }
+
+      match = phrase.match(/^p\s+(.+)$/);
+      if (match) {
+        return makePathDefinition(parseVertexCount(match[1], 5));
+      }
+
+      match = phrase.match(/^k\s+(.+)$/);
+      if (match) {
+        const parts = match[1].trim().split(/\s+/);
+
+        if (parts.length === 2) {
+          const left = parseSmallNumber(parts[0]);
+          const right = parseSmallNumber(parts[1]);
+
+          if (left && right) {
+            return makeCompleteBipartiteDefinition(left, right);
+          }
+        }
+
+        return makeCompleteDefinition(parseVertexCount(match[1], 4));
+      }
+
+      match = phrase.match(/^complete bipartite graph(?: on (.+))?$/);
+      if (match) {
+      if (!match[1]) {
+          return makeCompleteBipartiteDefinition(3, 3);
+        }
+
+        const parts = match[1].replace(/\bvertices?\b/g, "").replace(/\+/g, " ").trim().split(/\s+(?:and|by|x)\s+|\s+/);
+        const counts = parts.map((part) => parseSmallNumber(part)).filter(Boolean);
+
+        if (counts.length >= 2) {
+          return makeCompleteBipartiteDefinition(counts[0], counts[1]);
+        }
+
+        throw new Error("Complete bipartite graphs need two part sizes, such as K 3 4 or complete bipartite graph on 3 and 4 vertices.");
+      }
+
+      match = phrase.match(/^(?:complete )?multipartite graph(?: on (.+))?$/);
+      if (match) {
+        if (!match[1]) {
+          return makeCompleteMultipartiteDefinition([3, 3, 4]);
+        }
+
+        const parts = match[1]
+          .replace(/\bvertices?\b/g, "")
+          .replace(/\+/g, " ")
+          .trim()
+          .split(/\s*(?:,|and|by|x)\s+|\s+/)
+          .map((part) => parseSmallNumber(part))
+          .filter(Boolean);
+
+        if (parts.length >= 2) {
+          return makeCompleteMultipartiteDefinition(parts);
+        }
+
+        throw new Error("Multipartite graphs need part sizes, such as K_{3,3,4,5}.");
+      }
+
+      match = phrase.match(/^complete balanced bipartite graph(?: on (.+))?$/);
+      if (match) {
+        return makeBalancedBipartiteDefinition(parseBalancedPartSize(match[1]));
+      }
+
+      match = phrase.match(/^complete graph(?: on (.+))?$/);
+      if (match) {
+        return makeCompleteDefinition(parseVertexCount(match[1], 4));
+      }
+
+      match = phrase.match(/^empty graph(?: on (.+))?$/);
+      if (match) {
+        return makeEmptyDefinition(parseVertexCount(match[1], 3));
+      }
+
+      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, or Cartesian product of cycle on 4 vertices and path on 3 vertices.");
+    }
+
+    function parseGraphDescription(text) {
+      const normalizedDescription = normalizeDescription(text);
+
+      if (!normalizedDescription) {
+        throw new Error("Type a graph description first.");
+      }
+
+      return parseGraphPhrase(normalizedDescription);
+    }
+
+    function setGraphFromDefinition(definition, displayName) {
+      clearGraphData();
+
+      for (let index = 0; index < definition.vertexCount; index += 1) {
+        const node = createNode(makeNodeLabel(index, definition.vertexCount));
+        const position = definition.positions && definition.positions[index];
+
+        if (position) {
+          node.x = position.x;
+          node.y = position.y;
+          node.vx = 0;
+          node.vy = 0;
+          node.fixed = definition.layout === "standard";
+        }
+
+        nodes.push(node);
+      }
+
+      for (const edge of definition.edgePairs) {
+        const from = nodes[edge.from].label;
+        const to = nodes[edge.to].label;
+        edges.push({ from, to, key: makeEdgeKey(from, to), kind: edge.kind || "normal" });
+      }
+
+      currentGraphName = displayName;
+      currentGraphMeta = definition.meta || { type: "custom" };
+    }
+
+    function generateGraphFromDescription() {
+      let definition;
+
+      try {
+        definition = parseGraphDescription(descriptionInput.value);
+      } catch (error) {
+        status.textContent = error.message;
+        updateView();
+        return;
+      }
+
+      saveUndoState();
+      setGraphFromDefinition(definition, definition.displayName);
+      status.textContent = `Generated ${definition.displayName}.`;
+      updateView();
     }
 
     function loadSampleGraph() {
@@ -763,6 +3283,8 @@
         { from: "C", to: "D", key: "C--D" },
         { from: "D", to: "E", key: "D--E" }
       );
+      currentGraphName = "Sample graph";
+      currentGraphMeta = { type: "custom" };
     }
 
     function getPointerPosition(event) {
@@ -802,6 +3324,7 @@
       pointer.offsetY = pointerPosition.y - node.y;
       pointer.startSnapshot = cloneState();
       pointer.moved = false;
+      pointer.wasFixed = node.fixed;
       node.fixed = true;
       node.vx = 0;
       node.vy = 0;
@@ -825,16 +3348,18 @@
         return;
       }
 
-      pointer.draggingNode.fixed = false;
+      pointer.draggingNode.fixed = pointer.wasFixed;
       if (pointer.moved && pointer.startSnapshot) {
-        historyStack.push(pointer.startSnapshot);
-        trimHistory();
+        undoStack.push(pointer.startSnapshot);
+        trimStack(undoStack);
+        redoStack.length = 0;
       }
 
       status.textContent = `Released "${pointer.draggingNode.label}". The layout will settle again.`;
       pointer.draggingNode = null;
       pointer.startSnapshot = null;
       pointer.moved = false;
+      pointer.wasFixed = false;
       updateView();
     }
 
@@ -875,17 +3400,49 @@
       setShowLabels(labelToggle.checked);
     });
 
+    sizeSlider.addEventListener("change", () => {
+      setNodeRadius(sizeSlider.value);
+    });
+
+    sizeSlider.addEventListener("input", () => {
+      sizeValue.textContent = `${sizeSlider.value} px`;
+    });
+
+    nodeColorInput.addEventListener("change", () => {
+      setGraphColor("node", nodeColorInput.value);
+    });
+
+    edgeColorInput.addEventListener("change", () => {
+      setGraphColor("edge", edgeColorInput.value);
+    });
+
+    generateGraphBtn.addEventListener("click", generateGraphFromDescription);
+
+    dictionarySearch.addEventListener("input", renderDescriptionDictionary);
+
+    dictionaryList.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-example]");
+
+      if (!button) {
+        return;
+      }
+
+      descriptionInput.value = button.dataset.example;
+      descriptionInput.focus();
+    });
+
     sampleBtn.addEventListener("click", () => {
-      saveHistory();
+      saveUndoState();
       loadSampleGraph();
       status.textContent = "Loaded a sample connected graph with a force-directed layout.";
       updateView();
     });
 
     undoBtn.addEventListener("click", undoLastStep);
+    redoBtn.addEventListener("click", redoLastStep);
 
     resetBtn.addEventListener("click", () => {
-      saveHistory();
+      saveUndoState();
       clearGraphData();
       status.textContent = "Graph cleared.";
       propertyBox.textContent = "";
@@ -899,6 +3456,9 @@
     graphCanvas.addEventListener("pointerleave", stopDragging);
     graphCanvas.addEventListener("pointercancel", stopDragging);
 
+    labelToggle.checked = showLabels;
+    renderDescriptionDictionary();
+    updateSizeOutput();
     updateView();
     animate();
   </script>
