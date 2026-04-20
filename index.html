@@ -1630,7 +1630,7 @@
       }
 
       if (result === "limit") {
-        return { computed: false, text: "No cycle found in bounded search" };
+        return { computed: false, text: "Unknown (bounded search)" };
       }
 
       return { computed: true, text: "No" };
@@ -3181,7 +3181,7 @@
         return { text: "No" };
       }
 
-      return { text: getHamiltonianResult().text === "Yes" ? "Yes" : "No path found in bounded search" };
+      return { text: getHamiltonianResult().text === "Yes" ? "Yes" : "Unknown (bounded search)" };
     }
 
     function nudgeNodes(nodeA, nodeB) {
