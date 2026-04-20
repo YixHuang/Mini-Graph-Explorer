@@ -2730,6 +2730,37 @@
       return String(Math.round(value * 1000) / 1000);
     }
 
+    function gcd(first, second) {
+      let a = Math.abs(first);
+      let b = Math.abs(second);
+
+      while (b !== 0) {
+        const next = a % b;
+        a = b;
+        b = next;
+      }
+
+      return a || 1;
+    }
+
+    function formatFraction(numerator, denominator) {
+      if (numerator === Infinity) {
+        return "Infinity";
+      }
+
+      if (denominator === 0) {
+        return "Infinity";
+      }
+
+      const divisor = gcd(numerator, denominator);
+      const reducedNumerator = numerator / divisor;
+      const reducedDenominator = denominator / divisor;
+
+      return reducedDenominator === 1
+        ? String(reducedNumerator)
+        : `${reducedNumerator}/${reducedDenominator}`;
+    }
+
     function countComponentsAfterRemovedMask(mask, adjacencyList) {
       const visited = Array(adjacencyList.length).fill(false);
       let components = 0;
@@ -2770,7 +2801,7 @@
       if (currentGraphMeta.type === "multipartite") {
         const total = currentGraphMeta.parts.reduce((sum, part) => sum + part, 0);
         const largest = Math.max(...currentGraphMeta.parts);
-        return { text: formatNumber((total - largest) / largest) };
+        return { text: formatFraction(total - largest, largest) };
       }
 
       if (currentGraphMeta.type === "cube") {
@@ -2779,24 +2810,28 @@
 
       if (nodes.length > maxExactPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
-        const lowerBound = Math.max(0, getVertexConnectivityResult().text.replace(/[^0-9.]/g, "") / 2 || 0);
-        return { text: `≥ ${formatNumber(lowerBound)}` };
+        const vertexConnectivity = Number(getVertexConnectivityResult().text.replace(/[^0-9.]/g, ""));
+        return { text: `≥ ${formatFraction(Math.max(0, vertexConnectivity || 0), 2)}` };
       }
 
       const { adjacencyList } = buildAdjacencyInfo();
       const fullMask = (1 << nodes.length) - 1;
-      let best = Infinity;
+      let bestNumerator = Infinity;
+      let bestDenominator = 1;
 
       for (let mask = 1; mask < fullMask; mask += 1) {
         const removedCount = countBits(mask);
         const components = countComponentsAfterRemovedMask(mask, adjacencyList);
 
         if (components > 1) {
-          best = Math.min(best, removedCount / components);
+          if (removedCount * bestDenominator < bestNumerator * components) {
+            bestNumerator = removedCount;
+            bestDenominator = components;
+          }
         }
       }
 
-      return { text: formatNumber(best) };
+      return { text: formatFraction(bestNumerator, bestDenominator) };
     }
 
     function completeGraphGenus(n) {
