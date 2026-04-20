@@ -2920,6 +2920,27 @@
       }));
     }
 
+    function transformPositionsAnisotropic(positions, targetBounds) {
+      if (!positions || positions.length === 0) {
+        return [];
+      }
+
+      const source = getPositionBounds(positions);
+      const sourceWidth = Math.max(1, source.maxX - source.minX);
+      const sourceHeight = Math.max(1, source.maxY - source.minY);
+      const targetWidth = Math.max(1, targetBounds.maxX - targetBounds.minX);
+      const targetHeight = Math.max(1, targetBounds.maxY - targetBounds.minY);
+      const sourceCenterX = (source.minX + source.maxX) / 2;
+      const sourceCenterY = (source.minY + source.maxY) / 2;
+      const targetCenterX = (targetBounds.minX + targetBounds.maxX) / 2;
+      const targetCenterY = (targetBounds.minY + targetBounds.maxY) / 2;
+
+      return positions.map((position) => ({
+        x: targetCenterX + ((position.x - sourceCenterX) / sourceWidth) * targetWidth,
+        y: targetCenterY + ((position.y - sourceCenterY) / sourceHeight) * targetHeight
+      }));
+    }
+
     function fallbackPositions(definition) {
       return definition.positions || circlePositions(definition.vertexCount, Math.min(190, 45 + definition.vertexCount * 18));
     }
@@ -2952,7 +2973,73 @@
         return gridPositions(leftSize, rightSize, { staggerX: 34, staggerY: 18 });
       }
 
-      return gridPositions(leftSize, rightSize, { staggerX: 18, staggerY: 10 });
+      if (rightSize <= 6 && leftSize <= 14) {
+        return layeredProductPositions(leftDefinition, rightDefinition);
+      }
+
+      return gridPositions(leftSize, rightSize, { staggerX: 22, staggerY: 14 });
+    }
+
+    function productLayerCenters(rightDefinition) {
+      const rightSize = rightDefinition.vertexCount;
+      const centerX = graphCanvas.width / 2;
+      const centerY = graphCanvas.height / 2;
+
+      if (rightSize === 1) {
+        return [{ x: centerX, y: centerY }];
+      }
+
+      if (rightSize === 2) {
+        return [
+          { x: centerX - 18, y: 170 },
+          { x: centerX + 18, y: graphCanvas.height - 170 }
+        ];
+      }
+
+      if (rightDefinition.meta && rightDefinition.meta.type === "path") {
+        const top = 110;
+        const bottom = graphCanvas.height - 110;
+
+        return Array.from({ length: rightSize }, (_, index) => ({
+          x: centerX + (index % 2 === 0 ? -20 : 20),
+          y: top + ((bottom - top) * index) / (rightSize - 1)
+        }));
+      }
+
+      const macroRadius = rightSize <= 4 ? 145 : 170;
+      return circlePositions(rightSize, macroRadius).map((position, index) => ({
+        x: centerX + (position.x - centerX) * 1.12 + (index % 2 === 0 ? -8 : 8),
+        y: centerY + (position.y - centerY) * 0.82 + (index % 3 === 0 ? 8 : -6)
+      }));
+    }
+
+    function layeredProductPositions(leftDefinition, rightDefinition) {
+      const leftSize = leftDefinition.vertexCount;
+      const rightSize = rightDefinition.vertexCount;
+      const centers = productLayerCenters(rightDefinition);
+      const basePositions = fallbackPositions(leftDefinition);
+      const positions = [];
+      const twoLayerProduct = rightSize === 2;
+      const localWidth = Math.min(300, Math.max(150, graphCanvas.width / Math.max(2.3, Math.sqrt(rightSize) + 1.1)));
+      const localHeight = twoLayerProduct
+        ? Math.min(112, Math.max(64, localWidth * 0.38))
+        : Math.min(150, Math.max(70, localWidth * 0.5));
+
+      for (let layer = 0; layer < rightSize; layer += 1) {
+        const center = centers[layer];
+        const horizontalNudge = (layer % 2 === 0 ? -1 : 1) * Math.min(22, 6 + leftSize * 2);
+        const verticalNudge = rightSize > 2 ? ((layer % 3) - 1) * 5 : 0;
+        const layerPositions = transformPositionsAnisotropic(basePositions, {
+          minX: center.x - localWidth / 2 + horizontalNudge,
+          maxX: center.x + localWidth / 2 + horizontalNudge,
+          minY: center.y - localHeight / 2 + verticalNudge,
+          maxY: center.y + localHeight / 2 + verticalNudge
+        });
+
+        positions.push(...layerPositions);
+      }
+
+      return positions;
     }
 
     function makeDefinition(vertexCount, edgePairs, displayName, positions = null, layout = "standard", meta = { type: "custom" }) {
