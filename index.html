@@ -54,6 +54,24 @@
       line-height: 1;
     }
 
+    .byline {
+      margin: 0;
+      color: #5f6b72;
+      font-size: 0.98rem;
+    }
+
+    .byline a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(30, 111, 92, 0.35);
+    }
+
+    .byline a:hover,
+    .byline a:focus {
+      border-bottom-color: currentColor;
+    }
+
     .layout {
       display: grid;
       grid-template-columns: 300px 1fr;
@@ -384,6 +402,10 @@
   <main class="page">
     <section class="hero">
       <h1>Mini Graph Explorer</h1>
+      <p class="byline">
+        AI-assisted project by
+        <a href="https://sites.google.com/view/yixuanhuang/about-me" target="_blank" rel="noopener noreferrer">Yixuan Huang</a>
+      </p>
     </section>
 
     <section class="panel prompt-panel">
