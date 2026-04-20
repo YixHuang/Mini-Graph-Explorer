@@ -2811,7 +2811,7 @@
       if (nodes.length > maxExactPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
         const vertexConnectivity = Number(getVertexConnectivityResult().text.replace(/[^0-9.]/g, ""));
-        return { text: `≥ ${formatFraction(Math.max(0, vertexConnectivity || 0), 2)}` };
+        return { text: `≤ ${formatFraction(Math.max(0, vertexConnectivity || 0), 2)}` };
       }
 
       const { adjacencyList } = buildAdjacencyInfo();
