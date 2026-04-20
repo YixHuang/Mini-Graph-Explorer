@@ -2876,25 +2876,105 @@
       return Boolean(getBipartition(adjacencyList));
     }
 
+    function makeDefinitionFromAdjacency(adjacencyList, displayName, meta = { type: "custom" }) {
+      const edgePairs = [];
+
+      for (let from = 0; from < adjacencyList.length; from += 1) {
+        for (const to of adjacencyList[from]) {
+          if (from < to) {
+            addUniqueEdge(edgePairs, from, to);
+          }
+        }
+      }
+
+      return {
+        vertexCount: adjacencyList.length,
+        edgePairs,
+        displayName,
+        positions: null,
+        layout: "standard",
+        meta
+      };
+    }
+
+    function reduceDefinitionForPlanarity(definition) {
+      let adjacencySets = definitionToAdjacencyList(definition).map((neighbors) => new Set(neighbors));
+      let changed = true;
+
+      while (changed) {
+        changed = false;
+
+        for (let vertex = 0; vertex < adjacencySets.length; vertex += 1) {
+          const degree = adjacencySets[vertex].size;
+
+          if (degree > 2) {
+            continue;
+          }
+
+          const neighbors = [...adjacencySets[vertex]];
+
+          if (degree === 2) {
+            const [first, second] = neighbors;
+            adjacencySets[first].add(second);
+            adjacencySets[second].add(first);
+          }
+
+          for (const neighbor of neighbors) {
+            adjacencySets[neighbor].delete(vertex);
+          }
+
+          adjacencySets.splice(vertex, 1);
+
+          for (const neighborSet of adjacencySets) {
+            const rebuilt = new Set();
+            for (const neighbor of neighborSet) {
+              if (neighbor < vertex) {
+                rebuilt.add(neighbor);
+              } else if (neighbor > vertex) {
+                rebuilt.add(neighbor - 1);
+              }
+            }
+
+            neighborSet.clear();
+            for (const neighbor of rebuilt) {
+              neighborSet.add(neighbor);
+            }
+          }
+
+          changed = true;
+          break;
+        }
+      }
+
+      return makeDefinitionFromAdjacency(
+        adjacencySets.map((neighbors) => [...neighbors]),
+        `planarity core of ${definition.displayName || "graph"}`,
+        { type: "custom" }
+      );
+    }
+
     function getForbiddenMinorPlanarity(definition) {
-      if (definition.vertexCount <= 4) {
+      const reducedDefinition = reduceDefinitionForPlanarity(definition);
+      const reducedEdgeCount = (reducedDefinition.edgePairs || []).length;
+
+      if (reducedDefinition.vertexCount <= 4) {
         return "Yes";
       }
 
-      if ((definition.edgePairs || []).length > 3 * definition.vertexCount - 6) {
+      if (reducedEdgeCount > 3 * reducedDefinition.vertexCount - 6) {
         return "No";
       }
 
-      if (isBipartiteAdjacency(definitionToAdjacencyList(definition)) && (definition.edgePairs || []).length > 2 * definition.vertexCount - 4) {
+      if (isBipartiteAdjacency(definitionToAdjacencyList(reducedDefinition)) && reducedEdgeCount > 2 * reducedDefinition.vertexCount - 4) {
         return "No";
       }
 
-      const k5Result = getMinorContainmentResult(definition, makeCompleteDefinition(5)).text;
+      const k5Result = getMinorContainmentResult(reducedDefinition, makeCompleteDefinition(5)).text;
       if (k5Result === "Yes") {
         return "No";
       }
 
-      const k33Result = getMinorContainmentResult(definition, makeCompleteBipartiteDefinition(3, 3)).text;
+      const k33Result = getMinorContainmentResult(reducedDefinition, makeCompleteBipartiteDefinition(3, 3)).text;
       if (k33Result === "Yes") {
         return "No";
       }
@@ -2955,8 +3035,9 @@
         return "No";
       }
 
-      if (definition.vertexCount <= 16) {
-        return getForbiddenMinorPlanarity(definition);
+      const reducedDefinition = reduceDefinitionForPlanarity(definition);
+      if (reducedDefinition.vertexCount <= 16) {
+        return getForbiddenMinorPlanarity(reducedDefinition);
       }
 
       return "Unknown";
