@@ -2864,6 +2864,104 @@
       return Math.max(0, Math.ceil((edges.length - 3 * nodes.length + 6) / 6));
     }
 
+    function genusLowerBoundForDefinition(definition) {
+      if (definition.vertexCount <= 2) {
+        return 0;
+      }
+
+      return Math.max(0, Math.ceil(((definition.edgePairs || []).length - 3 * definition.vertexCount + 6) / 6));
+    }
+
+    function isBipartiteAdjacency(adjacencyList) {
+      return Boolean(getBipartition(adjacencyList));
+    }
+
+    function getForbiddenMinorPlanarity(definition) {
+      if (definition.vertexCount <= 4) {
+        return "Yes";
+      }
+
+      if ((definition.edgePairs || []).length > 3 * definition.vertexCount - 6) {
+        return "No";
+      }
+
+      if (isBipartiteAdjacency(definitionToAdjacencyList(definition)) && (definition.edgePairs || []).length > 2 * definition.vertexCount - 4) {
+        return "No";
+      }
+
+      const k5Result = getMinorContainmentResult(definition, makeCompleteDefinition(5)).text;
+      if (k5Result === "Yes") {
+        return "No";
+      }
+
+      const k33Result = getMinorContainmentResult(definition, makeCompleteBipartiteDefinition(3, 3)).text;
+      if (k33Result === "Yes") {
+        return "No";
+      }
+
+      if (k5Result === "No" && k33Result === "No") {
+        return "Yes";
+      }
+
+      return "Unknown";
+    }
+
+    function getKnownPlanarityResult(definition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view")) {
+      const meta = definition.meta || {};
+      const edgeCount = (definition.edgePairs || []).length;
+
+      if (definition.vertexCount <= 4) {
+        return "Yes";
+      }
+
+      if (["path", "cycle", "wheel", "empty"].includes(meta.type)) {
+        return "Yes";
+      }
+
+      if (meta.type === "complete") {
+        return meta.n <= 4 ? "Yes" : "No";
+      }
+
+      if (meta.type === "multipartite" && Array.isArray(meta.parts) && meta.parts.length === 2) {
+        return Math.min(meta.parts[0], meta.parts[1]) <= 2 ? "Yes" : "No";
+      }
+
+      if (meta.type === "cube") {
+        return meta.dimension <= 3 ? "Yes" : "No";
+      }
+
+      if (meta.type === "petersen") {
+        return "No";
+      }
+
+      if (meta.type === "cartesian") {
+        const left = meta.left || {};
+        const right = meta.right || {};
+
+        if ((left.type === "path" && right.type === "path") || (left.type === "cycle" && right.type === "path") || (left.type === "path" && right.type === "cycle")) {
+          return "Yes";
+        }
+
+        if (left.type === "cycle" && right.type === "cycle") {
+          return "No";
+        }
+      }
+
+      if (definition.vertexCount >= 3 && edgeCount > 3 * definition.vertexCount - 6) {
+        return "No";
+      }
+
+      if (definition.vertexCount >= 3 && isBipartiteAdjacency(definitionToAdjacencyList(definition)) && edgeCount > 2 * definition.vertexCount - 4) {
+        return "No";
+      }
+
+      if (definition.vertexCount <= 16) {
+        return getForbiddenMinorPlanarity(definition);
+      }
+
+      return "Unknown";
+    }
+
     function hasCompleteSubgraph(size) {
       if (nodes.length < size) {
         return false;
@@ -2938,6 +3036,8 @@
     }
 
     function getGenusResult() {
+      const currentDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
+
       if (nodes.length === 0) {
         return { text: "0" };
       }
@@ -2951,7 +3051,13 @@
       }
 
       if (currentGraphMeta.type === "multipartite") {
-        return { text: String(genusLowerBound()) };
+        const planarity = getKnownPlanarityResult(currentDefinition);
+        if (planarity === "Yes") {
+          return { text: "0" };
+        }
+
+        const lower = genusLowerBoundForDefinition(currentDefinition);
+        return { text: lower > 0 ? `≥ ${lower}` : "≥ 1" };
       }
 
       if (["path", "cycle", "wheel", "empty"].includes(currentGraphMeta.type)) {
@@ -2980,7 +3086,20 @@
       }
 
       const lower = genusLowerBound();
-      return { text: lower === 0 && !hasCompleteSubgraph(5) && !hasK33Subgraph() ? "0" : `≥ ${lower}` };
+      if (lower > 0) {
+        return { text: `≥ ${lower}` };
+      }
+
+      const planarity = getKnownPlanarityResult(currentDefinition);
+      if (planarity === "Yes") {
+        return { text: "0" };
+      }
+
+      if (planarity === "No") {
+        return { text: "≥ 1" };
+      }
+
+      return { text: "Unknown" };
     }
 
     function isPositiveGenusLowerBound(value) {
@@ -2998,21 +3117,7 @@
     }
 
     function getPlanarityResult() {
-      const genus = getGenusResult().text;
-
-      if (genus === "0") {
-        return { text: "Yes" };
-      }
-
-      if (/^\d+$/.test(genus) && Number(genus) > 0) {
-        return { text: "No" };
-      }
-
-      if (hasCompleteSubgraph(5) || hasK33Subgraph() || isPositiveGenusLowerBound(genus)) {
-        return { text: "No" };
-      }
-
-      return { text: "Likely yes" };
+      return { text: getKnownPlanarityResult() };
     }
 
     function getTraceableResult() {
