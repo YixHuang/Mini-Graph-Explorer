@@ -1688,7 +1688,7 @@
 
       if (vertexCount > maxExactPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
-        return { text: `>= ${getGreedyIndependenceLowerBound(adjacencyList)}` };
+        return { text: `≥ ${getGreedyIndependenceLowerBound(adjacencyList)}` };
       }
 
       const { adjacencyMasks } = buildAdjacencyInfo();
@@ -1779,7 +1779,7 @@
           return { text: edges.length === 0 ? "1" : "2" };
         }
 
-        return { text: `<= ${getGreedyChromaticUpperBound(adjacencyList)}` };
+        return { text: `≤ ${getGreedyChromaticUpperBound(adjacencyList)}` };
       }
 
       const { adjacencyList } = buildAdjacencyInfo();
@@ -1926,7 +1926,7 @@
       }
 
       if (edges.length > maxExactEdgeColoringEdges) {
-        return { text: getBipartition(adjacencyList) ? String(maxDegree) : `<= ${maxDegree + 1}` };
+        return { text: getBipartition(adjacencyList) ? String(maxDegree) : `≤ ${maxDegree + 1}` };
       }
 
       for (let colorCount = maxDegree; colorCount <= maxDegree + 1; colorCount += 1) {
@@ -2065,7 +2065,7 @@
       if (nodes.length > maxExactPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
         const lowerBound = Math.max(0, getVertexConnectivityResult().text.replace(/[^0-9.]/g, "") / 2 || 0);
-        return { text: `>= ${formatNumber(lowerBound)}` };
+        return { text: `≥ ${formatNumber(lowerBound)}` };
       }
 
       const { adjacencyList } = buildAdjacencyInfo();
@@ -2228,7 +2228,21 @@
       }
 
       const lower = genusLowerBound();
-      return { text: lower === 0 && !hasCompleteSubgraph(5) && !hasK33Subgraph() ? "0" : `>= ${lower}` };
+      return { text: lower === 0 && !hasCompleteSubgraph(5) && !hasK33Subgraph() ? "0" : `≥ ${lower}` };
+    }
+
+    function isPositiveGenusLowerBound(value) {
+      const text = String(value).trim();
+
+      if (text.startsWith("≥")) {
+        return Number(text.slice(1).trim()) > 0;
+      }
+
+      if (text.startsWith(">=")) {
+        return Number(text.slice(2).trim()) > 0;
+      }
+
+      return false;
     }
 
     function getPlanarityResult() {
@@ -2242,7 +2256,7 @@
         return { text: "No" };
       }
 
-      if (hasCompleteSubgraph(5) || hasK33Subgraph() || genus.startsWith(">=") && Number(genus.slice(3)) > 0) {
+      if (hasCompleteSubgraph(5) || hasK33Subgraph() || isPositiveGenusLowerBound(genus)) {
         return { text: "No" };
       }
 
