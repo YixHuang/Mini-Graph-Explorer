@@ -384,6 +384,36 @@
       font-size: 1.02rem;
     }
 
+    .minor-finder {
+      margin-top: 0.85rem;
+      padding: 0.85rem;
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .minor-finder label {
+      color: var(--accent);
+    }
+
+    .minor-controls {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) 150px;
+      gap: 0.65rem;
+      align-items: end;
+    }
+
+    .minor-controls input,
+    .minor-controls button {
+      margin-bottom: 0;
+    }
+
+    .minor-result {
+      margin: 0.65rem 0 0;
+      color: #4b5563;
+      font-size: 0.94rem;
+    }
+
     .list {
       background: #f9f5ee;
       border: 1px dashed var(--line);
@@ -644,6 +674,8 @@
     let currentGraphMeta = { type: "empty", parts: [] };
     let nodeColor = "#1e6f5c";
     let edgeColor = "#8b6f47";
+    let minorQuery = "";
+    let minorResultText = "Enter a target graph to test whether it is a minor of the graph in view.";
 
     const physics = {
       repulsion: 9000,
@@ -666,6 +698,12 @@
 
     function normalizeName(value) {
       return value.trim();
+    }
+
+    function resetMinorResultForGraphChange() {
+      minorResultText = minorQuery
+        ? "Run Find Minor again for the current graph."
+        : "Enter a target graph to test whether it is a minor of the graph in view.";
     }
 
     function randomInRange(min, max) {
@@ -890,6 +928,7 @@
       pointer.startSnapshot = null;
       pointer.moved = false;
       pointer.wasFixed = false;
+      resetMinorResultForGraphChange();
       updateView();
     }
 
@@ -963,7 +1002,7 @@
       }
     }
 
-    function makeDefinitionFromCurrentGraph(displayName) {
+    function makePlainDefinitionFromCurrentGraph(displayName) {
       const labelToIndex = new Map(nodes.map((node, index) => [node.label, index]));
       const edgePairs = [];
       const positions = nodes.map((node) => ({ x: node.x, y: node.y }));
@@ -977,11 +1016,24 @@
         }
       }
 
-      return makeDefinition(
-        nodes.length,
+      return {
+        vertexCount: nodes.length,
         edgePairs,
         displayName,
         positions,
+        layout: "standard",
+        meta: currentGraphMeta || { type: "custom" }
+      };
+    }
+
+    function makeDefinitionFromCurrentGraph(displayName) {
+      const definition = makePlainDefinitionFromCurrentGraph(displayName);
+
+      return makeDefinition(
+        definition.vertexCount,
+        definition.edgePairs,
+        displayName,
+        definition.positions,
         "standard",
         { type: "saved-source", name: displayName }
       );
@@ -1098,6 +1150,7 @@
       nodes.push(createNode(cleanName));
       currentGraphName = "Custom graph";
       currentGraphMeta = { type: "custom" };
+      resetMinorResultForGraphChange();
       status.textContent = `Added node "${cleanName}".`;
       updateView();
     }
@@ -1136,6 +1189,7 @@
       edges.push({ from: start, to: end, key: edgeKey });
       currentGraphName = "Custom graph";
       currentGraphMeta = { type: "custom" };
+      resetMinorResultForGraphChange();
       status.textContent = `Connected "${start}" to "${end}".`;
       nudgeNodes(fromNode, toNode);
       updateView();
@@ -1160,6 +1214,7 @@
       nodes.splice(nodeIndex, 1);
       currentGraphName = "Custom graph";
       currentGraphMeta = { type: "custom" };
+      resetMinorResultForGraphChange();
 
       for (let i = edges.length - 1; i >= 0; i -= 1) {
         const edge = edges[i];
@@ -1193,6 +1248,7 @@
       edges.splice(edgeIndex, 1);
       currentGraphName = "Custom graph";
       currentGraphMeta = { type: "custom" };
+      resetMinorResultForGraphChange();
       status.textContent = `Deleted edge "${start}-${end}".`;
       updateView();
     }
@@ -1669,6 +1725,665 @@
       }
 
       return best;
+    }
+
+    function cloneAdjacencySets(adjacencyList) {
+      return adjacencyList.map((neighbors) => new Set(neighbors));
+    }
+
+    function getDegeneracyLowerBound(adjacencyList) {
+      const adjacencySets = cloneAdjacencySets(adjacencyList);
+      const remaining = new Set(adjacencyList.map((_, index) => index));
+      let lowerBound = 0;
+
+      while (remaining.size > 0) {
+        let bestVertex = null;
+        let bestDegree = Infinity;
+
+        for (const vertex of remaining) {
+          let degree = 0;
+          for (const neighbor of adjacencySets[vertex]) {
+            if (remaining.has(neighbor)) {
+              degree += 1;
+            }
+          }
+
+          if (degree < bestDegree) {
+            bestDegree = degree;
+            bestVertex = vertex;
+          }
+        }
+
+        lowerBound = Math.max(lowerBound, bestDegree);
+        remaining.delete(bestVertex);
+      }
+
+      return lowerBound;
+    }
+
+    function getGreedyCliqueLowerBound(adjacencyList) {
+      const adjacencySets = cloneAdjacencySets(adjacencyList);
+      const order = adjacencyList
+        .map((neighbors, vertex) => ({ vertex, degree: neighbors.length }))
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.vertex);
+      let best = adjacencyList.length === 0 ? 0 : 1;
+
+      for (const start of order) {
+        const clique = [start];
+        const candidates = order.filter((vertex) => vertex !== start && adjacencySets[start].has(vertex));
+
+        for (const candidate of candidates) {
+          if (clique.every((vertex) => adjacencySets[candidate].has(vertex))) {
+            clique.push(candidate);
+          }
+        }
+
+        best = Math.max(best, clique.length);
+      }
+
+      return best - 1;
+    }
+
+    function countMissingNeighborEdges(vertex, adjacencySets, remaining) {
+      const neighbors = [...adjacencySets[vertex]].filter((neighbor) => remaining.has(neighbor));
+      let missing = 0;
+
+      for (let i = 0; i < neighbors.length; i += 1) {
+        for (let j = i + 1; j < neighbors.length; j += 1) {
+          if (!adjacencySets[neighbors[i]].has(neighbors[j])) {
+            missing += 1;
+          }
+        }
+      }
+
+      return missing;
+    }
+
+    function getEliminationUpperBound(adjacencyList, strategy = "min-fill") {
+      const adjacencySets = cloneAdjacencySets(adjacencyList);
+      const remaining = new Set(adjacencyList.map((_, index) => index));
+      let width = 0;
+
+      while (remaining.size > 0) {
+        let bestVertex = null;
+        let bestScore = Infinity;
+        let bestDegree = Infinity;
+
+        for (const vertex of remaining) {
+          const degree = [...adjacencySets[vertex]].filter((neighbor) => remaining.has(neighbor)).length;
+          const fill = countMissingNeighborEdges(vertex, adjacencySets, remaining);
+          const score = strategy === "min-degree" ? degree : fill;
+
+          if (score < bestScore || score === bestScore && degree < bestDegree) {
+            bestScore = score;
+            bestDegree = degree;
+            bestVertex = vertex;
+          }
+        }
+
+        const neighbors = [...adjacencySets[bestVertex]].filter((neighbor) => remaining.has(neighbor));
+        width = Math.max(width, neighbors.length);
+
+        for (let i = 0; i < neighbors.length; i += 1) {
+          for (let j = i + 1; j < neighbors.length; j += 1) {
+            adjacencySets[neighbors[i]].add(neighbors[j]);
+            adjacencySets[neighbors[j]].add(neighbors[i]);
+          }
+        }
+
+        remaining.delete(bestVertex);
+      }
+
+      return width;
+    }
+
+    function adjacencyListToMasks(adjacencyList) {
+      return adjacencyList.map((neighbors) => neighbors.reduce((mask, neighbor) => mask | (1 << neighbor), 0));
+    }
+
+    function getActiveVertices(activeMask, vertexCount) {
+      const vertices = [];
+
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+        if (activeMask & (1 << vertex)) {
+          vertices.push(vertex);
+        }
+      }
+
+      return vertices;
+    }
+
+    function getMaskDegeneracyLowerBound(masks, activeMask, vertexCount) {
+      let remaining = activeMask;
+      let lowerBound = 0;
+
+      while (remaining) {
+        let bestVertex = -1;
+        let bestDegree = Infinity;
+
+        for (const vertex of getActiveVertices(remaining, vertexCount)) {
+          const degree = countBits(masks[vertex] & remaining);
+
+          if (degree < bestDegree) {
+            bestDegree = degree;
+            bestVertex = vertex;
+          }
+        }
+
+        lowerBound = Math.max(lowerBound, bestDegree);
+        remaining &= ~(1 << bestVertex);
+      }
+
+      return lowerBound;
+    }
+
+    function getFillCountFromMasks(masks, vertex, activeMask, vertexCount) {
+      const neighbors = getActiveVertices(masks[vertex] & activeMask, vertexCount);
+      let fill = 0;
+
+      for (let i = 0; i < neighbors.length; i += 1) {
+        for (let j = i + 1; j < neighbors.length; j += 1) {
+          if (!(masks[neighbors[i]] & (1 << neighbors[j]))) {
+            fill += 1;
+          }
+        }
+      }
+
+      return fill;
+    }
+
+    function getExactTreewidthByElimination(adjacencyList, upperBound) {
+      const vertexCount = adjacencyList.length;
+
+      if (vertexCount <= 1) {
+        return { exact: true, value: 0 };
+      }
+
+      const stepLimit = 350000;
+      const fullMask = (1 << vertexCount) - 1;
+      const memo = new Map();
+      let best = upperBound;
+      let steps = 0;
+      let aborted = false;
+
+      function makeStateKey(masks, activeMask) {
+        return `${activeMask}:${getActiveVertices(activeMask, vertexCount).map((vertex) => masks[vertex] & activeMask).join(".")}`;
+      }
+
+      function search(masks, activeMask, currentWidth) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return;
+        }
+
+        if (!activeMask) {
+          best = Math.min(best, currentWidth);
+          return;
+        }
+
+        const lowerBound = Math.max(currentWidth, getMaskDegeneracyLowerBound(masks, activeMask, vertexCount));
+        if (lowerBound >= best) {
+          return;
+        }
+
+        const key = makeStateKey(masks, activeMask);
+        if (memo.has(key) && memo.get(key) <= currentWidth) {
+          return;
+        }
+        memo.set(key, currentWidth);
+
+        const candidates = getActiveVertices(activeMask, vertexCount)
+          .map((vertex) => ({
+            vertex,
+            degree: countBits(masks[vertex] & activeMask),
+            fill: getFillCountFromMasks(masks, vertex, activeMask, vertexCount)
+          }))
+          .sort((a, b) => a.fill - b.fill || a.degree - b.degree);
+
+        for (const candidate of candidates) {
+          const vertex = candidate.vertex;
+          const nextWidth = Math.max(currentWidth, candidate.degree);
+
+          if (nextWidth >= best) {
+            continue;
+          }
+
+          const nextMasks = masks.slice();
+          const neighbors = getActiveVertices(nextMasks[vertex] & activeMask, vertexCount);
+
+          for (let i = 0; i < neighbors.length; i += 1) {
+            for (let j = i + 1; j < neighbors.length; j += 1) {
+              nextMasks[neighbors[i]] |= 1 << neighbors[j];
+              nextMasks[neighbors[j]] |= 1 << neighbors[i];
+            }
+          }
+
+          const nextActiveMask = activeMask & ~(1 << vertex);
+          for (const other of getActiveVertices(nextActiveMask, vertexCount)) {
+            nextMasks[other] &= ~(1 << vertex);
+          }
+          nextMasks[vertex] = 0;
+
+          search(nextMasks, nextActiveMask, nextWidth);
+          if (aborted) {
+            return;
+          }
+        }
+      }
+
+      search(adjacencyListToMasks(adjacencyList), fullMask, 0);
+      return { exact: !aborted, value: best };
+    }
+
+    function getTreewidthBoundsForAdjacency(adjacencyList, allowExact = true) {
+      const vertexCount = adjacencyList.length;
+
+      if (vertexCount === 0) {
+        return { lower: 0, upper: 0, exact: true };
+      }
+
+      const edgeCount = adjacencyList.reduce((sum, neighbors) => sum + neighbors.length, 0) / 2;
+      if (edgeCount === 0) {
+        return { lower: 0, upper: 0, exact: true };
+      }
+
+      const lower = Math.max(
+        getDegeneracyLowerBound(adjacencyList),
+        getGreedyCliqueLowerBound(adjacencyList)
+      );
+      const upper = Math.min(
+        getEliminationUpperBound(adjacencyList, "min-fill"),
+        getEliminationUpperBound(adjacencyList, "min-degree")
+      );
+
+      if (lower === upper) {
+        return { lower, upper, exact: true };
+      }
+
+      if (allowExact && vertexCount <= 11) {
+        const exact = getExactTreewidthByElimination(adjacencyList, upper);
+        if (exact.exact) {
+          return { lower: exact.value, upper: exact.value, exact: true };
+        }
+
+        return { lower, upper: exact.value, exact: false };
+      }
+
+      return { lower, upper, exact: false };
+    }
+
+    function getTreewidthResult() {
+      if (nodes.length === 0) {
+        return { text: "0" };
+      }
+
+      if (isCompleteGraph()) {
+        return { text: String(nodes.length - 1) };
+      }
+
+      if (edges.length === 0) {
+        return { text: "0" };
+      }
+
+      if (currentGraphMeta.type === "path") {
+        return { text: nodes.length <= 1 ? "0" : "1" };
+      }
+
+      if (currentGraphMeta.type === "cycle") {
+        return { text: "2" };
+      }
+
+      if (currentGraphMeta.type === "wheel") {
+        return { text: "3" };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        const total = currentGraphMeta.parts.reduce((sum, part) => sum + part, 0);
+        return { text: String(total - Math.max(...currentGraphMeta.parts)) };
+      }
+
+      const { adjacencyList } = buildAdjacencyInfo();
+      const bounds = getTreewidthBoundsForAdjacency(adjacencyList);
+
+      return bounds.exact
+        ? { text: String(bounds.upper) }
+        : { text: `≥ ${bounds.lower}, ≤ ${bounds.upper}` };
+    }
+
+    function definitionToAdjacencyList(definition) {
+      const adjacencyList = Array.from({ length: definition.vertexCount }, () => []);
+
+      for (const edge of definition.edgePairs || []) {
+        if (edge.from === edge.to || edge.from < 0 || edge.to < 0 || edge.from >= definition.vertexCount || edge.to >= definition.vertexCount) {
+          continue;
+        }
+
+        adjacencyList[edge.from].push(edge.to);
+        adjacencyList[edge.to].push(edge.from);
+      }
+
+      return adjacencyList.map((neighbors) => [...new Set(neighbors)]);
+    }
+
+    function getTreewidthBoundsForDefinition(definition, allowExact = true) {
+      if (definition.vertexCount === 0) {
+        return { lower: 0, upper: 0, exact: true };
+      }
+
+      if ((definition.edgePairs || []).length === 0) {
+        return { lower: 0, upper: 0, exact: true };
+      }
+
+      const meta = definition.meta || {};
+      if (meta.type === "complete") {
+        return { lower: definition.vertexCount - 1, upper: definition.vertexCount - 1, exact: true };
+      }
+
+      if (meta.type === "path") {
+        const value = definition.vertexCount <= 1 ? 0 : 1;
+        return { lower: value, upper: value, exact: true };
+      }
+
+      if (meta.type === "cycle") {
+        return { lower: 2, upper: 2, exact: true };
+      }
+
+      if (meta.type === "wheel") {
+        return { lower: 3, upper: 3, exact: true };
+      }
+
+      if (meta.type === "multipartite" && Array.isArray(meta.parts)) {
+        const total = meta.parts.reduce((sum, part) => sum + part, 0);
+        const value = total - Math.max(...meta.parts);
+        return { lower: value, upper: value, exact: true };
+      }
+
+      return getTreewidthBoundsForAdjacency(definitionToAdjacencyList(definition), allowExact);
+    }
+
+    function adjacencyMasksFromList(adjacencyList) {
+      return adjacencyList.map((neighbors) => neighbors.reduce((mask, neighbor) => mask | (1 << neighbor), 0));
+    }
+
+    function isMaskConnected(mask, adjacencyMasks, vertexCount) {
+      if (!mask) {
+        return false;
+      }
+
+      let start = -1;
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+        if (mask & (1 << vertex)) {
+          start = vertex;
+          break;
+        }
+      }
+
+      let visited = 0;
+      let frontier = 1 << start;
+
+      while (frontier) {
+        const vertex = Math.trunc(Math.log2(frontier & -frontier));
+        frontier &= ~(1 << vertex);
+
+        if (visited & (1 << vertex)) {
+          continue;
+        }
+
+        visited |= 1 << vertex;
+        frontier |= adjacencyMasks[vertex] & mask & ~visited;
+      }
+
+      return (visited & mask) === mask;
+    }
+
+    function getConnectedSubsetData(adjacencyMasks, vertexCount) {
+      const output = [];
+      const fullMask = (1 << vertexCount) - 1;
+
+      for (let mask = 1; mask <= fullMask; mask += 1) {
+        if (!isMaskConnected(mask, adjacencyMasks, vertexCount)) {
+          continue;
+        }
+
+        let neighborMask = 0;
+        for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+          if (mask & (1 << vertex)) {
+            neighborMask |= adjacencyMasks[vertex];
+          }
+        }
+
+        output.push({
+          mask,
+          size: countBits(mask),
+          neighborMask
+        });
+      }
+
+      return output.sort((a, b) => a.size - b.size || a.mask - b.mask);
+    }
+
+    function runExactMinorSearch(hostDefinition, targetDefinition) {
+      const hostVertexCount = hostDefinition.vertexCount;
+      const targetAdjacencyList = definitionToAdjacencyList(targetDefinition);
+      const targetDegrees = targetAdjacencyList.map((neighbors) => neighbors.length);
+      const isolatedCount = targetDegrees.filter((degree) => degree === 0).length;
+      const activeTargetVertices = targetDegrees
+        .map((degree, vertex) => ({ degree, vertex }))
+        .filter((item) => item.degree > 0)
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.vertex);
+
+      if ((targetDefinition.edgePairs || []).length === 0) {
+        return { completed: true, found: targetDefinition.vertexCount <= hostVertexCount };
+      }
+
+      if (hostVertexCount > 16 || activeTargetVertices.length > 9) {
+        return { completed: false, found: false };
+      }
+
+      const hostAdjacencyMasks = adjacencyMasksFromList(definitionToAdjacencyList(hostDefinition));
+      const connectedSubsets = getConnectedSubsetData(hostAdjacencyMasks, hostVertexCount);
+      const assignedMasks = Array(targetDefinition.vertexCount).fill(0);
+      const stepLimit = 700000;
+      let steps = 0;
+      let aborted = false;
+
+      function canUseCandidate(targetVertex, candidate) {
+        for (let index = 0; index < activeTargetVertices.length; index += 1) {
+          const otherTarget = activeTargetVertices[index];
+          const otherMask = assignedMasks[otherTarget];
+
+          if (!otherMask) {
+            continue;
+          }
+
+          if (targetAdjacencyList[targetVertex].includes(otherTarget) && !(candidate.neighborMask & otherMask)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      function search(position, usedMask) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return false;
+        }
+
+        if (position === activeTargetVertices.length) {
+          return hostVertexCount - countBits(usedMask) >= isolatedCount;
+        }
+
+        const targetVertex = activeTargetVertices[position];
+        const remainingActive = activeTargetVertices.length - position - 1;
+        const maxCandidateSize = hostVertexCount - countBits(usedMask) - remainingActive - isolatedCount;
+
+        for (const candidate of connectedSubsets) {
+          if (candidate.size > maxCandidateSize) {
+            break;
+          }
+
+          if (candidate.mask & usedMask) {
+            continue;
+          }
+
+          if (!canUseCandidate(targetVertex, candidate)) {
+            continue;
+          }
+
+          assignedMasks[targetVertex] = candidate.mask;
+          if (search(position + 1, usedMask | candidate.mask)) {
+            return true;
+          }
+          assignedMasks[targetVertex] = 0;
+
+          if (aborted) {
+            return false;
+          }
+        }
+
+        return false;
+      }
+
+      const found = search(0, 0);
+      return { completed: !aborted, found };
+    }
+
+    function hasSubgraphEmbedding(hostDefinition, targetDefinition) {
+      const hostAdjacencyList = definitionToAdjacencyList(hostDefinition);
+      const targetAdjacencyList = definitionToAdjacencyList(targetDefinition);
+      const hostAdjacencySets = hostAdjacencyList.map((neighbors) => new Set(neighbors));
+      const order = targetAdjacencyList
+        .map((neighbors, vertex) => ({ vertex, degree: neighbors.length }))
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.vertex);
+      const mapping = Array(targetDefinition.vertexCount).fill(-1);
+      const usedHostVertices = new Set();
+      const stepLimit = 250000;
+      let steps = 0;
+      let aborted = false;
+
+      function search(position) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return false;
+        }
+
+        if (position === order.length) {
+          return true;
+        }
+
+        const targetVertex = order[position];
+        const candidates = hostAdjacencyList
+          .map((neighbors, hostVertex) => ({ hostVertex, degree: neighbors.length }))
+          .filter((item) => !usedHostVertices.has(item.hostVertex) && item.degree >= targetAdjacencyList[targetVertex].length)
+          .sort((a, b) => a.degree - b.degree);
+
+        for (const candidate of candidates) {
+          let allowed = true;
+
+          for (const targetNeighbor of targetAdjacencyList[targetVertex]) {
+            const mappedNeighbor = mapping[targetNeighbor];
+            if (mappedNeighbor !== -1 && !hostAdjacencySets[candidate.hostVertex].has(mappedNeighbor)) {
+              allowed = false;
+              break;
+            }
+          }
+
+          if (!allowed) {
+            continue;
+          }
+
+          mapping[targetVertex] = candidate.hostVertex;
+          usedHostVertices.add(candidate.hostVertex);
+
+          if (search(position + 1)) {
+            return true;
+          }
+
+          mapping[targetVertex] = -1;
+          usedHostVertices.delete(candidate.hostVertex);
+
+          if (aborted) {
+            return false;
+          }
+        }
+
+        return false;
+      }
+
+      const found = search(0);
+      return { completed: !aborted, found };
+    }
+
+    function getMinorContainmentResult(hostDefinition, targetDefinition) {
+      if (targetDefinition.vertexCount === 0) {
+        return { text: "Yes" };
+      }
+
+      if (hostDefinition.vertexCount === 0) {
+        return { text: "No" };
+      }
+
+      if (targetDefinition.vertexCount > hostDefinition.vertexCount) {
+        return { text: "No" };
+      }
+
+      if ((targetDefinition.edgePairs || []).length > (hostDefinition.edgePairs || []).length) {
+        return { text: "No" };
+      }
+
+      const subgraphSearch = hasSubgraphEmbedding(hostDefinition, targetDefinition);
+      if (subgraphSearch.found) {
+        return { text: "Yes" };
+      }
+
+      const hostTreewidth = getTreewidthBoundsForDefinition(hostDefinition, false);
+      const targetTreewidth = getTreewidthBoundsForDefinition(targetDefinition, true);
+      if (targetTreewidth.lower > hostTreewidth.upper) {
+        return { text: "No" };
+      }
+
+      const exactSearch = runExactMinorSearch(hostDefinition, targetDefinition);
+      if (exactSearch.completed) {
+        return { text: exactSearch.found ? "Yes" : "No" };
+      }
+
+      if (exactSearch.found) {
+        return { text: "Yes" };
+      }
+
+      return { text: "Search too large for exact minor test" };
+    }
+
+    function runFindMinor() {
+      minorQuery = minorQuery.trim();
+
+      if (!minorQuery) {
+        minorResultText = "Enter a target graph first, such as K5, C3, Petersen graph, or a saved graph name.";
+        updateView();
+        return;
+      }
+
+      let targetDefinition;
+
+      try {
+        targetDefinition = parseGraphDescription(minorQuery);
+      } catch (error) {
+        minorResultText = error.message;
+        updateView();
+        return;
+      }
+
+      const hostDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
+      const result = getMinorContainmentResult(hostDefinition, targetDefinition);
+      minorResultText = `${targetDefinition.displayName} minor? ${result.text}`;
+      updateView();
     }
 
     function getIndependenceNumberResult() {
@@ -2498,6 +3213,7 @@
       const planar = getPlanarityResult();
       const genus = getGenusResult();
       const traceable = getTraceableResult();
+      const treewidth = getTreewidthResult();
       const properties = [
         ["Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No"],
         ["Vertex connectivity &kappa;(G)", vertexConnectivity.text],
@@ -2507,6 +3223,7 @@
         ["Traceable?", traceable.text],
         ["Planar?", planar.text],
         ["Genus", genus.text],
+        ["Treewidth tw(G)", treewidth.text],
         ["Independence number &alpha;(G)", independenceNumber.text],
         ["Chromatic number &chi;(G)", chromaticNumber.text],
         ["Chromatic index &chi;&prime;(G)", chromaticIndex.text],
@@ -2517,7 +3234,15 @@
 
       propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value]) => (
         `<div class="property-card"><span>${name}</span><strong>${value}</strong></div>`
-      )).join("")}</div>`;
+      )).join("")}</div>
+      <div class="minor-finder">
+        <label for="minorInput">Find minor</label>
+        <div class="minor-controls">
+          <input id="minorInput" type="text" value="${escapeHtml(minorQuery)}" placeholder="Examples: K5, C3, Petersen graph, G">
+          <button id="findMinorBtn" type="button">Find Minor</button>
+        </div>
+        <p id="minorResult" class="minor-result">${escapeHtml(minorResultText)}</p>
+      </div>`;
     }
 
     function renderList() {
@@ -2547,6 +3272,7 @@
       pointer.startSnapshot = null;
       pointer.moved = false;
       pointer.wasFixed = false;
+      resetMinorResultForGraphChange();
     }
 
     function setNodeRadius(value) {
@@ -3903,6 +4629,24 @@
     generateGraphBtn.addEventListener("click", generateGraphFromDescription);
     saveGraphBtn.addEventListener("click", saveCurrentGraphToMemory);
     savedGraphList.addEventListener("click", handleSavedGraphListClick);
+    propertyBox.addEventListener("input", (event) => {
+      if (event.target && event.target.id === "minorInput") {
+        minorQuery = event.target.value;
+      }
+    });
+    propertyBox.addEventListener("click", (event) => {
+      if (event.target && event.target.id === "findMinorBtn") {
+        const input = document.getElementById("minorInput");
+        minorQuery = input ? input.value : minorQuery;
+        runFindMinor();
+      }
+    });
+    propertyBox.addEventListener("keydown", (event) => {
+      if (event.target && event.target.id === "minorInput" && event.key === "Enter") {
+        minorQuery = event.target.value;
+        runFindMinor();
+      }
+    });
 
     dictionarySearch.addEventListener("input", renderDescriptionDictionary);
 
