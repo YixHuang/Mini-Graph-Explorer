@@ -195,6 +195,75 @@
       font-size: 0.9rem;
     }
 
+    .saved-graphs {
+      border: 1px solid rgba(30, 111, 92, 0.18);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(217, 239, 232, 0.55), rgba(255, 255, 255, 0.72));
+      padding: 0.85rem;
+    }
+
+    .saved-graph-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .saved-graph-header strong {
+      color: var(--accent);
+    }
+
+    .saved-graph-header span {
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+
+    .saved-graph-controls {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) 190px;
+      gap: 0.65rem;
+      align-items: end;
+    }
+
+    .saved-graph-controls input {
+      margin-bottom: 0;
+    }
+
+    .saved-graph-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .saved-graph-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+    }
+
+    .saved-graph-item strong {
+      color: var(--ink);
+    }
+
+    .saved-graph-empty {
+      margin: 0;
+      color: #4b5563;
+      font-size: 0.92rem;
+    }
+
+    .saved-graph-item button {
+      width: auto;
+      margin: 0;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.82rem;
+    }
+
     .control-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -424,7 +493,22 @@
         </div>
       </div>
 
-      <details class="dictionary" open>
+      <section class="saved-graphs" aria-label="Saved graphs">
+        <div class="saved-graph-header">
+          <strong>Saved graphs</strong>
+          <span>Save a graph as G, H, or a custom name, then reuse it in descriptions.</span>
+        </div>
+        <div class="saved-graph-controls">
+          <div>
+            <label for="saveGraphNameInput">Save current graph as</label>
+            <input id="saveGraphNameInput" type="text" placeholder="G">
+          </div>
+          <button id="saveGraphBtn" type="button">Save Current Graph</button>
+        </div>
+        <div id="savedGraphList" class="saved-graph-list"></div>
+      </section>
+
+      <details class="dictionary">
         <summary>Graph description dictionary</summary>
         <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, complement, Cartesian product...">
         <div id="dictionaryList" class="dictionary-list"></div>
@@ -536,6 +620,9 @@
     const edgeColorInput = document.getElementById("edgeColorInput");
     const descriptionInput = document.getElementById("descriptionInput");
     const generateGraphBtn = document.getElementById("generateGraphBtn");
+    const saveGraphNameInput = document.getElementById("saveGraphNameInput");
+    const saveGraphBtn = document.getElementById("saveGraphBtn");
+    const savedGraphList = document.getElementById("savedGraphList");
     const dictionarySearch = document.getElementById("dictionarySearch");
     const dictionaryList = document.getElementById("dictionaryList");
     const status = document.getElementById("status");
@@ -550,6 +637,8 @@
     const hardSearchStepLimit = 120000;
     const maxGeneratedVertices = 80;
     const labelPreferenceKey = "miniGraphExplorer.showLabels";
+    const savedGraphsKey = "miniGraphExplorer.savedGraphs";
+    const savedGraphs = loadSavedGraphs();
     let showLabels = loadLabelPreference();
     let currentGraphName = "Empty graph";
     let currentGraphMeta = { type: "empty", parts: [] };
@@ -597,6 +686,141 @@
       } catch (error) {
         // Ignore storage errors so the app still works in restricted browsers.
       }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function loadSavedGraphs() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(savedGraphsKey) || "{}");
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return {};
+        }
+
+        return parsed;
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function persistSavedGraphs() {
+      try {
+        localStorage.setItem(savedGraphsKey, JSON.stringify(savedGraphs));
+        return true;
+      } catch (error) {
+        status.textContent = "This browser could not save graphs locally.";
+        return false;
+      }
+    }
+
+    function cloneGraphDefinition(definition, displayName = definition.displayName) {
+      return {
+        vertexCount: definition.vertexCount,
+        edgePairs: (definition.edgePairs || []).map((edge) => ({ ...edge })),
+        displayName,
+        positions: definition.positions ? definition.positions.map((position) => ({ ...position })) : null,
+        layout: definition.layout || "standard",
+        meta: JSON.parse(JSON.stringify(definition.meta || { type: "custom" }))
+      };
+    }
+
+    function savedGraphLookupKey(value) {
+      return normalizeDescription(value);
+    }
+
+    function validateSavedGraphName(value) {
+      const name = value.trim().replace(/\s+/g, " ");
+      const key = savedGraphLookupKey(name);
+      const compactKey = key.replace(/\s+/g, "");
+      const reservedWords = new Set([
+        "join",
+        "cartesian",
+        "cartesian product",
+        "complement",
+        "cycle",
+        "path",
+        "complete",
+        "empty",
+        "petersen",
+        "petersen graph",
+        "multipartite"
+      ]);
+
+      if (!name) {
+        throw new Error("Type a name before saving the graph.");
+      }
+
+      if (!key) {
+        throw new Error("Use a graph name like G, H, or myGraph.");
+      }
+
+      if (!/^[A-Za-z][A-Za-z0-9 -]{0,31}$/.test(name)) {
+        throw new Error("Saved graph names should start with a letter and use only letters, numbers, spaces, or hyphens.");
+      }
+
+      if (
+        reservedWords.has(key) ||
+        /^(join of|cartesian product of|complement of|complement graph of)\b/.test(key) ||
+        /^(?:[cpqwk]\d+|\d+k\d+|k\d+(?:,\d+)+)$/.test(compactKey)
+      ) {
+        throw new Error("Use a custom name like G or H instead of a built-in notation such as C3 or K5.");
+      }
+
+      return { name, key };
+    }
+
+    function isStoredGraphDefinition(definition) {
+      return Boolean(
+        definition &&
+        Number.isInteger(definition.vertexCount) &&
+        definition.vertexCount >= 0 &&
+        definition.vertexCount <= maxGeneratedVertices &&
+        Array.isArray(definition.edgePairs)
+      );
+    }
+
+    function getSavedGraphDefinition(phrase) {
+      const record = savedGraphs[savedGraphLookupKey(phrase)];
+
+      if (!record || typeof record.name !== "string" || !isStoredGraphDefinition(record.definition)) {
+        return null;
+      }
+
+      const definition = cloneGraphDefinition(record.definition, record.name);
+      definition.meta = {
+        type: "saved",
+        name: record.name,
+        displayName: record.name,
+        base: cloneGraphDefinition(record.definition, record.name).meta
+      };
+
+      return definition;
+    }
+
+    function renderSavedGraphs() {
+      const entries = Object.entries(savedGraphs)
+        .filter(([, record]) => record && typeof record.name === "string" && isStoredGraphDefinition(record.definition))
+        .sort(([, first], [, second]) => first.name.localeCompare(second.name));
+
+      if (entries.length === 0) {
+        savedGraphList.innerHTML = '<p class="saved-graph-empty">No saved graphs yet. Save the current graph, then try inputs like join of G and C5.</p>';
+        return;
+      }
+
+      savedGraphList.innerHTML = entries.map(([key, record]) => (
+        `<div class="saved-graph-item">
+          <strong>${escapeHtml(record.name)}</strong>
+          <button type="button" class="secondary" data-saved-action="use" data-saved-key="${escapeHtml(key)}">Use</button>
+          <button type="button" class="secondary" data-saved-action="delete" data-saved-key="${escapeHtml(key)}">Delete</button>
+        </div>`
+      )).join("");
     }
 
     function cloneState() {
@@ -736,6 +960,124 @@
       const key = `${Math.min(from, to)}--${Math.max(from, to)}`;
       if (!edgePairs.some((edge) => edge.key === key)) {
         edgePairs.push({ from, to, key, kind });
+      }
+    }
+
+    function makeDefinitionFromCurrentGraph(displayName) {
+      const labelToIndex = new Map(nodes.map((node, index) => [node.label, index]));
+      const edgePairs = [];
+      const positions = nodes.map((node) => ({ x: node.x, y: node.y }));
+
+      for (const edge of edges) {
+        const from = labelToIndex.get(edge.from);
+        const to = labelToIndex.get(edge.to);
+
+        if (from !== undefined && to !== undefined) {
+          addUniqueEdge(edgePairs, from, to, edge.kind || "normal");
+        }
+      }
+
+      return makeDefinition(
+        nodes.length,
+        edgePairs,
+        displayName,
+        positions,
+        "standard",
+        { type: "saved-source", name: displayName }
+      );
+    }
+
+    function saveCurrentGraphToMemory() {
+      if (nodes.length === 0) {
+        status.textContent = "There is no graph to save yet.";
+        return;
+      }
+
+      let graphName;
+      let graphKey;
+
+      try {
+        ({ name: graphName, key: graphKey } = validateSavedGraphName(saveGraphNameInput.value));
+      } catch (error) {
+        status.textContent = error.message;
+        return;
+      }
+
+      let definition;
+
+      try {
+        definition = makeDefinitionFromCurrentGraph(graphName);
+      } catch (error) {
+        status.textContent = error.message;
+        return;
+      }
+
+      savedGraphs[graphKey] = {
+        name: graphName,
+        definition: cloneGraphDefinition(definition, graphName),
+        savedAt: Date.now()
+      };
+
+      if (!persistSavedGraphs()) {
+        delete savedGraphs[graphKey];
+        renderSavedGraphs();
+        return;
+      }
+
+      renderSavedGraphs();
+      saveGraphNameInput.value = "";
+      status.textContent = `Saved current graph as ${graphName}. Try: join of ${graphName} and C5.`;
+    }
+
+    function useSavedGraph(graphKey) {
+      const record = savedGraphs[graphKey];
+
+      if (!record) {
+        status.textContent = "That saved graph is no longer available.";
+        renderSavedGraphs();
+        return;
+      }
+
+      descriptionInput.value = record.name;
+      descriptionInput.focus();
+      status.textContent = `Ready to use saved graph ${record.name}.`;
+    }
+
+    function deleteSavedGraph(graphKey) {
+      const record = savedGraphs[graphKey];
+
+      if (!record) {
+        status.textContent = "That saved graph is no longer available.";
+        renderSavedGraphs();
+        return;
+      }
+
+      delete savedGraphs[graphKey];
+      if (!persistSavedGraphs()) {
+        savedGraphs[graphKey] = record;
+        return;
+      }
+
+      renderSavedGraphs();
+      status.textContent = `Deleted saved graph ${record.name}.`;
+    }
+
+    function handleSavedGraphListClick(event) {
+      const button = event.target.closest("button[data-saved-action]");
+
+      if (!button) {
+        return;
+      }
+
+      const graphKey = button.dataset.savedKey;
+      const action = button.dataset.savedAction;
+
+      if (action === "use") {
+        useSavedGraph(graphKey);
+      }
+
+      if (action === "delete") {
+        deleteSavedGraph(graphKey);
       }
     }
 
@@ -2294,6 +2636,11 @@
         pattern: "complement of C5, complement graph of Petersen graph",
         example: "complement of C5",
         description: "Complement graph on the same vertex set."
+      },
+      {
+        pattern: "Saved graph names: G, H, myGraph",
+        example: "join of G and C5",
+        description: "Save the current graph, then reuse its name in joins, products, and complements."
       }
     ];
 
@@ -2318,9 +2665,17 @@
     }
 
     function normalizeDescription(text) {
-      return text
+      const cleaned = text
         .toLowerCase()
         .replace(/[{}_.;:!?]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (/^(a|an|the)$/.test(cleaned)) {
+        return cleaned;
+      }
+
+      return cleaned
         .replace(/\b(a|an|the)\b/g, " ")
         .replace(/\s+/g, " ")
         .trim();
@@ -3039,6 +3394,11 @@
         }
       }
 
+      const savedDefinition = getSavedGraphDefinition(phrase);
+      if (savedDefinition) {
+        return savedDefinition;
+      }
+
       compactMatch = compactPhrase.match(/^(\d+)k_?n$/);
       if (compactMatch) {
         throw new Error(`Use a number for n, such as ${compactMatch[1]}K5 for ${compactMatch[1]} copies of K_5.`);
@@ -3440,6 +3800,8 @@
     });
 
     generateGraphBtn.addEventListener("click", generateGraphFromDescription);
+    saveGraphBtn.addEventListener("click", saveCurrentGraphToMemory);
+    savedGraphList.addEventListener("click", handleSavedGraphListClick);
 
     dictionarySearch.addEventListener("input", renderDescriptionDictionary);
 
@@ -3481,6 +3843,7 @@
 
     labelToggle.checked = showLabels;
     renderDescriptionDictionary();
+    renderSavedGraphs();
     updateSizeOutput();
     updateView();
     animate();
