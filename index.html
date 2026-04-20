@@ -689,6 +689,7 @@
 
     const pointer = {
       draggingNode: null,
+      dragGroup: [],
       offsetX: 0,
       offsetY: 0,
       startSnapshot: null,
@@ -925,6 +926,7 @@
       edgeColorInput.value = edgeColor;
       updateSizeOutput();
       pointer.draggingNode = null;
+      pointer.dragGroup = [];
       pointer.startSnapshot = null;
       pointer.moved = false;
       pointer.wasFixed = false;
@@ -3304,6 +3306,7 @@
       currentGraphName = "Empty graph";
       currentGraphMeta = { type: "empty", parts: [] };
       pointer.draggingNode = null;
+      pointer.dragGroup = [];
       pointer.startSnapshot = null;
       pointer.moved = false;
       pointer.wasFixed = false;
@@ -4164,7 +4167,9 @@
         {
           type: "cartesian",
           left: leftDefinition.meta || { type: "custom" },
-          right: rightDefinition.meta || { type: "custom" }
+          right: rightDefinition.meta || { type: "custom" },
+          leftVertexCount: leftDefinition.vertexCount,
+          rightVertexCount: rightDefinition.vertexCount
         }
       );
     }
@@ -4556,6 +4561,57 @@
       return null;
     }
 
+    function getCartesianCopyDragGroup(node) {
+      if (
+        !currentGraphMeta ||
+        currentGraphMeta.type !== "cartesian" ||
+        !Number.isInteger(currentGraphMeta.leftVertexCount) ||
+        !Number.isInteger(currentGraphMeta.rightVertexCount)
+      ) {
+        return [node];
+      }
+
+      const leftSize = currentGraphMeta.leftVertexCount;
+      const rightSize = currentGraphMeta.rightVertexCount;
+      const nodeIndex = nodes.indexOf(node);
+
+      if (nodeIndex === -1 || leftSize <= 0 || rightSize <= 1 || leftSize * rightSize !== nodes.length) {
+        return [node];
+      }
+
+      const leftIndex = nodeIndex % leftSize;
+      const group = [];
+
+      for (let rightIndex = 0; rightIndex < rightSize; rightIndex += 1) {
+        const copyIndex = rightIndex * leftSize + leftIndex;
+        if (nodes[copyIndex]) {
+          group.push(nodes[copyIndex]);
+        }
+      }
+
+      return group.length > 0 ? group : [node];
+    }
+
+    function getBoundedDragDelta(rawDx, rawDy, dragGroup) {
+      const radius = physics.nodeRadius;
+      let minDx = -Infinity;
+      let maxDx = Infinity;
+      let minDy = -Infinity;
+      let maxDy = Infinity;
+
+      for (const item of dragGroup) {
+        minDx = Math.max(minDx, radius - item.startX);
+        maxDx = Math.min(maxDx, graphCanvas.width - radius - item.startX);
+        minDy = Math.max(minDy, radius - item.startY);
+        maxDy = Math.min(maxDy, graphCanvas.height - radius - item.startY);
+      }
+
+      return {
+        dx: Math.max(minDx, Math.min(maxDx, rawDx)),
+        dy: Math.max(minDy, Math.min(maxDy, rawDy))
+      };
+    }
+
     function startDragging(event) {
       const pointerPosition = getPointerPosition(event);
       const node = findNodeAtPosition(pointerPosition.x, pointerPosition.y);
@@ -4570,10 +4626,22 @@
       pointer.startSnapshot = cloneState();
       pointer.moved = false;
       pointer.wasFixed = node.fixed;
-      node.fixed = true;
-      node.vx = 0;
-      node.vy = 0;
-      status.textContent = `Dragging "${node.label}".`;
+      pointer.dragGroup = getCartesianCopyDragGroup(node).map((groupNode) => ({
+        node: groupNode,
+        startX: groupNode.x,
+        startY: groupNode.y,
+        wasFixed: groupNode.fixed
+      }));
+
+      for (const item of pointer.dragGroup) {
+        item.node.fixed = true;
+        item.node.vx = 0;
+        item.node.vy = 0;
+      }
+
+      status.textContent = pointer.dragGroup.length > 1
+        ? `Dragging "${node.label}" and its Cartesian product copies.`
+        : `Dragging "${node.label}".`;
     }
 
     function moveDragging(event) {
@@ -4582,9 +4650,18 @@
       }
 
       const pointerPosition = getPointerPosition(event);
-      pointer.draggingNode.x = pointerPosition.x - pointer.offsetX;
-      pointer.draggingNode.y = pointerPosition.y - pointer.offsetY;
-      clampNode(pointer.draggingNode);
+      const primary = pointer.dragGroup.find((item) => item.node === pointer.draggingNode) || pointer.dragGroup[0];
+      const rawDx = pointerPosition.x - pointer.offsetX - primary.startX;
+      const rawDy = pointerPosition.y - pointer.offsetY - primary.startY;
+      const { dx, dy } = getBoundedDragDelta(rawDx, rawDy, pointer.dragGroup);
+
+      for (const item of pointer.dragGroup) {
+        item.node.x = item.startX + dx;
+        item.node.y = item.startY + dy;
+        item.node.vx = 0;
+        item.node.vy = 0;
+      }
+
       pointer.moved = true;
     }
 
@@ -4593,15 +4670,21 @@
         return;
       }
 
-      pointer.draggingNode.fixed = pointer.wasFixed;
+      for (const item of pointer.dragGroup) {
+        item.node.fixed = item.wasFixed;
+      }
+
       if (pointer.moved && pointer.startSnapshot) {
         undoStack.push(pointer.startSnapshot);
         trimStack(undoStack);
         redoStack.length = 0;
       }
 
-      status.textContent = `Released "${pointer.draggingNode.label}". The layout will settle again.`;
+      status.textContent = pointer.dragGroup.length > 1
+        ? `Released "${pointer.draggingNode.label}" and its Cartesian product copies.`
+        : `Released "${pointer.draggingNode.label}". The layout will settle again.`;
       pointer.draggingNode = null;
+      pointer.dragGroup = [];
       pointer.startSnapshot = null;
       pointer.moved = false;
       pointer.wasFixed = false;
