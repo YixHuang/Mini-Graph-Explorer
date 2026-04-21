@@ -124,6 +124,17 @@
       align-items: end;
     }
 
+    .matrix-input-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 190px;
+      gap: 0.9rem;
+      align-items: end;
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.58);
+      padding: 0.85rem;
+    }
+
     .prompt-panel textarea,
     .dictionary-search {
       margin-bottom: 0;
@@ -132,6 +143,11 @@
 
     .prompt-panel button {
       margin-bottom: 0;
+    }
+
+    .matrix-input-panel textarea {
+      min-height: 5.8rem;
+      font-family: Consolas, "Courier New", monospace;
     }
 
     .primary-controls {
@@ -408,6 +424,18 @@
       margin-bottom: 0;
     }
 
+    .spectrum-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .spectrum-controls button {
+      width: auto;
+      min-width: 170px;
+      margin-bottom: 0;
+    }
+
     .minor-result {
       margin: 0.65rem 0 0;
       color: #4b5563;
@@ -491,6 +519,10 @@
         grid-template-columns: 1fr;
       }
 
+      .matrix-input-panel {
+        grid-template-columns: 1fr;
+      }
+
       .canvas-wrap,
       canvas {
         min-height: 420px;
@@ -523,6 +555,17 @@
             <label for="labelToggle">Show vertex labels</label>
           </div>
         </div>
+      </div>
+
+      <div class="matrix-input-panel">
+        <div>
+          <label for="matrixInput">Adjacency matrix</label>
+          <textarea id="matrixInput" placeholder="Example for P_3:
+0 1 0
+1 0 1
+0 1 0"></textarea>
+        </div>
+        <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
       </div>
 
       <section class="saved-graphs" aria-label="Saved graphs">
@@ -657,6 +700,8 @@
     const savedGraphList = document.getElementById("savedGraphList");
     const dictionarySearch = document.getElementById("dictionarySearch");
     const dictionaryList = document.getElementById("dictionaryList");
+    const matrixInput = document.getElementById("matrixInput");
+    const generateMatrixBtn = document.getElementById("generateMatrixBtn");
     const status = document.getElementById("status");
     const propertyBox = document.getElementById("propertyBox");
     const listBox = document.getElementById("listBox");
@@ -678,6 +723,7 @@
     let edgeColor = "#8b6f47";
     let minorQuery = "";
     let minorResultText = "Enter a target graph to test whether it is a minor of the graph in view.";
+    let spectrumResultText = "Click Compute Spectrum to compute adjacency eigenvalues for the current graph.";
 
     const physics = {
       repulsion: 9000,
@@ -707,6 +753,7 @@
       minorResultText = minorQuery
         ? "Run Find Minor again for the current graph."
         : "Enter a target graph to test whether it is a minor of the graph in view.";
+      spectrumResultText = "Click Compute Spectrum to compute adjacency eigenvalues for the current graph.";
     }
 
     function randomInRange(min, max) {
@@ -1327,6 +1374,25 @@
       }
 
       return { adjacencyList, adjacencyMasks };
+    }
+
+    function buildAdjacencyMatrix() {
+      const indexByLabel = new Map(nodes.map((node, index) => [node.label, index]));
+      const matrix = Array.from({ length: nodes.length }, () => Array(nodes.length).fill(0));
+
+      for (const edge of edges) {
+        const fromIndex = indexByLabel.get(edge.from);
+        const toIndex = indexByLabel.get(edge.to);
+
+        if (fromIndex === undefined || toIndex === undefined) {
+          continue;
+        }
+
+        matrix[fromIndex][toIndex] = 1;
+        matrix[toIndex][fromIndex] = 1;
+      }
+
+      return matrix;
     }
 
     function isCompleteGraph() {
@@ -2915,6 +2981,115 @@
       return String(Math.round(value * 1000) / 1000);
     }
 
+    function formatEigenvalue(value) {
+      if (Math.abs(value) < 1e-9) {
+        return "0";
+      }
+
+      const roundedInteger = Math.round(value);
+      if (Math.abs(value - roundedInteger) < 1e-8) {
+        return String(roundedInteger);
+      }
+
+      const rounded = Math.round(value * 1000000) / 1000000;
+      return rounded.toFixed(6).replace(/\.?0+$/, "");
+    }
+
+    function jacobiEigenvaluesSymmetric(matrix) {
+      const size = matrix.length;
+      const working = matrix.map((row) => row.slice());
+      const tolerance = 1e-10;
+      const maxSweeps = Math.max(24, Math.min(80, size * 8));
+
+      for (let sweep = 0; sweep < maxSweeps; sweep += 1) {
+        let changed = false;
+        let largestOffDiagonal = 0;
+
+        for (let p = 0; p < size - 1; p += 1) {
+          for (let q = p + 1; q < size; q += 1) {
+            const offDiagonal = working[p][q];
+            const magnitude = Math.abs(offDiagonal);
+            largestOffDiagonal = Math.max(largestOffDiagonal, magnitude);
+
+            if (magnitude <= tolerance) {
+              continue;
+            }
+
+            const app = working[p][p];
+            const aqq = working[q][q];
+            const angle = 0.5 * Math.atan2(2 * offDiagonal, aqq - app);
+            const cosine = Math.cos(angle);
+            const sine = Math.sin(angle);
+
+            for (let index = 0; index < size; index += 1) {
+              if (index === p || index === q) {
+                continue;
+              }
+
+              const aip = working[index][p];
+              const aiq = working[index][q];
+              working[index][p] = cosine * aip - sine * aiq;
+              working[p][index] = working[index][p];
+              working[index][q] = sine * aip + cosine * aiq;
+              working[q][index] = working[index][q];
+            }
+
+            working[p][p] = cosine * cosine * app - 2 * sine * cosine * offDiagonal + sine * sine * aqq;
+            working[q][q] = sine * sine * app + 2 * sine * cosine * offDiagonal + cosine * cosine * aqq;
+            working[p][q] = 0;
+            working[q][p] = 0;
+            changed = true;
+          }
+        }
+
+        if (!changed || largestOffDiagonal <= tolerance) {
+          break;
+        }
+      }
+
+      return working
+        .map((row, index) => row[index])
+        .sort((a, b) => b - a);
+    }
+
+    function formatSpectrum(eigenvalues) {
+      if (eigenvalues.length === 0) {
+        return "∅";
+      }
+
+      const groups = [];
+      const tolerance = 1e-6;
+
+      for (const value of eigenvalues) {
+        const lastGroup = groups[groups.length - 1];
+
+        if (lastGroup && Math.abs(value - lastGroup.value) <= tolerance) {
+          lastGroup.count += 1;
+        } else {
+          groups.push({ value, count: 1 });
+        }
+      }
+
+      return groups.map((group) => {
+        const label = formatEigenvalue(group.value);
+        return group.count === 1 ? label : `${label}^{${group.count}}`;
+      }).join(", ");
+    }
+
+    function computeSpectrum() {
+      if (nodes.length === 0) {
+        spectrumResultText = "Spectrum: ∅. The empty graph has no adjacency eigenvalues.";
+        updateView();
+        return;
+      }
+
+      const matrix = buildAdjacencyMatrix();
+      const eigenvalues = jacobiEigenvaluesSymmetric(matrix);
+      spectrumResultText = `Spectrum of A(G): ${formatSpectrum(eigenvalues)}.`;
+      status.textContent = `Computed adjacency spectrum for ${currentGraphName}.`;
+      updateView();
+    }
+
     function gcd(first, second) {
       let a = Math.abs(first);
       let b = Math.abs(second);
@@ -3648,6 +3823,13 @@
           <button id="findMinorBtn" type="button">Find Minor</button>
         </div>
         <p id="minorResult" class="minor-result">${escapeHtml(minorResultText)}</p>
+      </div>
+      <div class="minor-finder">
+        <label>Spectrum</label>
+        <div class="spectrum-controls">
+          <button id="computeSpectrumBtn" type="button">Compute Spectrum</button>
+        </div>
+        <p id="spectrumResult" class="minor-result">${escapeHtml(spectrumResultText)}</p>
       </div>`;
     }
 
@@ -4842,6 +5024,117 @@
       return parseGraphPhrase(normalizedDescription);
     }
 
+    function parseAdjacencyMatrixRow(rowText) {
+      const cleanRow = rowText
+        .trim()
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .trim();
+
+      if (!cleanRow) {
+        return [];
+      }
+
+      if (/^[01]+$/.test(cleanRow)) {
+        return cleanRow.split("").map((entry) => Number(entry));
+      }
+
+      return cleanRow
+        .replace(/,/g, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((entry) => {
+          if (!/^[01]$/.test(entry)) {
+            throw new Error("Adjacency matrix entries should be only 0 or 1.");
+          }
+
+          return Number(entry);
+        });
+    }
+
+    function parseAdjacencyMatrix(text) {
+      const cleanedText = text.trim();
+
+      if (!cleanedText) {
+        throw new Error("Paste an adjacency matrix first.");
+      }
+
+      const rows = cleanedText
+        .replace(/^\s*\[/, "")
+        .replace(/\]\s*$/, "")
+        .split(/[\n;]+/)
+        .map((row) => parseAdjacencyMatrixRow(row))
+        .filter((row) => row.length > 0);
+
+      if (rows.length === 0) {
+        throw new Error("Paste an adjacency matrix first.");
+      }
+
+      const size = rows.length;
+
+      if (size > maxGeneratedVertices) {
+        throw new Error(`Please use an adjacency matrix with ${maxGeneratedVertices} vertices or fewer.`);
+      }
+
+      for (const row of rows) {
+        if (row.length !== size) {
+          throw new Error("Adjacency matrix must be square: the number of rows must equal every row length.");
+        }
+      }
+
+      for (let row = 0; row < size; row += 1) {
+        if (rows[row][row] !== 0) {
+          throw new Error("Diagonal entries must be 0 for a simple graph.");
+        }
+
+        for (let column = row + 1; column < size; column += 1) {
+          if (rows[row][column] !== rows[column][row]) {
+            throw new Error("Adjacency matrix must be symmetric for an undirected graph.");
+          }
+        }
+      }
+
+      return rows;
+    }
+
+    function makeDefinitionFromAdjacencyMatrix(matrix) {
+      const edgePairs = [];
+
+      for (let row = 0; row < matrix.length; row += 1) {
+        for (let column = row + 1; column < matrix.length; column += 1) {
+          if (matrix[row][column] === 1) {
+            addUniqueEdge(edgePairs, row, column);
+          }
+        }
+      }
+
+      return makeDefinition(
+        matrix.length,
+        edgePairs,
+        `Adjacency matrix graph (${matrix.length} vertices)`,
+        circlePositions(matrix.length, Math.min(220, 55 + matrix.length * 14)),
+        "standard",
+        { type: "adjacency-matrix" }
+      );
+    }
+
+    function generateGraphFromAdjacencyMatrix() {
+      let definition;
+
+      try {
+        definition = makeDefinitionFromAdjacencyMatrix(parseAdjacencyMatrix(matrixInput.value));
+      } catch (error) {
+        status.textContent = error.message;
+        updateView();
+        return;
+      }
+
+      saveUndoState();
+      setGraphFromDefinition(definition, definition.displayName);
+      status.textContent = `Loaded ${definition.displayName}.`;
+      updateView();
+    }
+
     function setGraphFromDefinition(definition, displayName) {
       clearGraphData();
 
@@ -5114,6 +5407,7 @@
     });
 
     generateGraphBtn.addEventListener("click", generateGraphFromDescription);
+    generateMatrixBtn.addEventListener("click", generateGraphFromAdjacencyMatrix);
     saveGraphBtn.addEventListener("click", saveCurrentGraphToMemory);
     savedGraphList.addEventListener("click", handleSavedGraphListClick);
     propertyBox.addEventListener("input", (event) => {
@@ -5126,6 +5420,10 @@
         const input = document.getElementById("minorInput");
         minorQuery = input ? input.value : minorQuery;
         runFindMinor();
+      }
+
+      if (event.target && event.target.id === "computeSpectrumBtn") {
+        computeSpectrum();
       }
     });
     propertyBox.addEventListener("keydown", (event) => {
