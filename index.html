@@ -668,44 +668,25 @@
       <aside class="panel">
         <h2>Manual Edits</h2>
 
-        <div class="control-grid">
-          <div>
-            <label for="nodeInput">Add vertex</label>
-            <input id="nodeInput" type="text" placeholder="A">
-          </div>
-          <div>
-            <label for="deleteNodeInput">Delete vertex</label>
-            <input id="deleteNodeInput" type="text" placeholder="A">
-          </div>
+        <div>
+          <label for="nodeInput">Add/delete vertex</label>
+          <input id="nodeInput" type="text" placeholder="A">
         </div>
         <div class="button-row">
-          <button id="addNodeBtn">+ Add Vertex</button>
-          <button id="deleteNodeBtn" class="secondary">- Delete Vertex</button>
+          <button id="addNodeBtn">Add</button>
+          <button id="deleteNodeBtn" class="secondary">Delete</button>
         </div>
 
-        <div class="control-grid">
-          <div>
-            <label for="fromInput">Edge from</label>
-            <input id="fromInput" type="text" placeholder="A">
-          </div>
-          <div>
-            <label for="toInput">Edge to</label>
-            <input id="toInput" type="text" placeholder="B">
-          </div>
-        </div>
-        <div class="control-grid">
-          <div>
-            <label for="deleteFromInput">Delete from</label>
-            <input id="deleteFromInput" type="text" placeholder="A">
-          </div>
-          <div>
-            <label for="deleteToInput">Delete to</label>
-            <input id="deleteToInput" type="text" placeholder="B">
+        <div>
+          <label>Add/delete edge</label>
+          <div class="control-grid">
+            <input id="fromInput" type="text" placeholder="from" aria-label="Edge from">
+            <input id="toInput" type="text" placeholder="to" aria-label="Edge to">
           </div>
         </div>
         <div class="button-row">
-          <button id="addEdgeBtn">+ Add Edge</button>
-          <button id="deleteEdgeBtn" class="secondary">- Delete Edge</button>
+          <button id="addEdgeBtn">Add</button>
+          <button id="deleteEdgeBtn" class="secondary">Delete</button>
         </div>
 
         <div class="size-row">
@@ -758,11 +739,8 @@
     let nextNodeId = 1;
 
     const nodeInput = document.getElementById("nodeInput");
-    const deleteNodeInput = document.getElementById("deleteNodeInput");
     const fromInput = document.getElementById("fromInput");
     const toInput = document.getElementById("toInput");
-    const deleteFromInput = document.getElementById("deleteFromInput");
-    const deleteToInput = document.getElementById("deleteToInput");
     const addNodeBtn = document.getElementById("addNodeBtn");
     const deleteNodeBtn = document.getElementById("deleteNodeBtn");
     const addEdgeBtn = document.getElementById("addEdgeBtn");
@@ -5643,9 +5621,9 @@
     });
 
     deleteNodeBtn.addEventListener("click", () => {
-      deleteNode(deleteNodeInput.value);
-      deleteNodeInput.value = "";
-      deleteNodeInput.focus();
+      deleteNode(nodeInput.value);
+      nodeInput.value = "";
+      nodeInput.focus();
     });
 
     addEdgeBtn.addEventListener("click", () => {
@@ -5655,9 +5633,9 @@
     });
 
     deleteEdgeBtn.addEventListener("click", () => {
-      deleteEdge(deleteFromInput.value, deleteToInput.value);
-      deleteToInput.value = "";
-      deleteFromInput.focus();
+      deleteEdge(fromInput.value, toInput.value);
+      toInput.value = "";
+      fromInput.focus();
     });
 
     labelToggle.addEventListener("change", () => {
