@@ -539,6 +539,10 @@
       overflow-wrap: anywhere;
     }
 
+    .minor-result:empty {
+      display: none;
+    }
+
     .graph-view-header {
       display: flex;
       align-items: center;
@@ -830,8 +834,8 @@
     let nodeColor = "#1e6f5c";
     let edgeColor = "#8b6f47";
     let minorQuery = "";
-    let minorResultText = "Enter a target graph to test whether it is a minor of the graph in view.";
-    let spectrumResultText = "Click Compute Spectrum to compute adjacency eigenvalues for the current graph.";
+    let minorResultText = "";
+    let spectrumResultText = "";
 
     const physics = {
       repulsion: 9000,
@@ -858,10 +862,8 @@
     }
 
     function resetMinorResultForGraphChange() {
-      minorResultText = minorQuery
-        ? "Run Find Minor again for the current graph."
-        : "Enter a target graph to test whether it is a minor of the graph in view.";
-      spectrumResultText = "Click Compute Spectrum to compute adjacency eigenvalues for the current graph.";
+      minorResultText = "";
+      spectrumResultText = "";
     }
 
     function randomInRange(min, max) {
