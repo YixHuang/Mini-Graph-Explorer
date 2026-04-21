@@ -4134,11 +4134,26 @@
 
     function renderList() {
       const nodeText = nodes.length ? nodes.map((node) => node.label).join(", ") : "(none)";
-      const edgeText = edges.length
-        ? edges.map((edge) => `${edge.from} - ${edge.to}`).join("\n")
+      const neighborMap = new Map(nodes.map((node) => [node.label, []]));
+
+      for (const edge of edges) {
+        if (neighborMap.has(edge.from)) {
+          neighborMap.get(edge.from).push(edge.to);
+        }
+
+        if (neighborMap.has(edge.to)) {
+          neighborMap.get(edge.to).push(edge.from);
+        }
+      }
+
+      const neighborText = nodes.length
+        ? nodes.map((node) => {
+          const neighbors = neighborMap.get(node.label) || [];
+          return `${node.label}: ${neighbors.length ? neighbors.join(", ") : "(none)"}`;
+        }).join("\n")
         : "(none)";
 
-      listBox.textContent = `Graph: ${currentGraphName}\nVertices: ${nodeText}\nEdges:\n${edgeText}\nVertex labels shown: ${showLabels ? "yes" : "no"}\nVertex size: ${physics.nodeRadius}px`;
+      listBox.textContent = `Graph: ${currentGraphName}\nVertices: ${nodeText}\nNeighbors:\n${neighborText}\nVertex labels shown: ${showLabels ? "yes" : "no"}\nVertex size: ${physics.nodeRadius}px`;
       undoBtn.disabled = undoStack.length === 0;
       redoBtn.disabled = redoStack.length === 0;
     }
