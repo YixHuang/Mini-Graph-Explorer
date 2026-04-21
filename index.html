@@ -119,20 +119,30 @@
 
     .prompt-main {
       display: grid;
-      grid-template-columns: 1fr 220px;
+      grid-template-columns: minmax(0, 1fr) 260px;
       gap: 0.9rem;
       align-items: end;
     }
 
-    .matrix-input-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 190px;
-      gap: 0.9rem;
-      align-items: end;
+    .compact-details {
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.58);
       padding: 0.85rem;
+    }
+
+    .compact-details summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .matrix-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 190px;
+      gap: 0.9rem;
+      align-items: end;
+      margin-top: 0.75rem;
     }
 
     .prompt-panel textarea,
@@ -153,6 +163,33 @@
     .primary-controls {
       display: grid;
       gap: 0.65rem;
+    }
+
+    .save-inline {
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 0.65rem;
+    }
+
+    .save-inline label {
+      color: var(--accent);
+      font-size: 0.92rem;
+    }
+
+    .save-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 86px;
+      gap: 0.45rem;
+    }
+
+    .save-row input,
+    .save-row button {
+      margin-bottom: 0;
+    }
+
+    .save-row button {
+      padding-inline: 0.7rem;
     }
 
     .label-toggle-main {
@@ -218,34 +255,6 @@
       padding: 0.85rem;
     }
 
-    .saved-graph-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .saved-graph-header strong {
-      color: var(--accent);
-    }
-
-    .saved-graph-header span {
-      color: #4b5563;
-      font-size: 0.9rem;
-    }
-
-    .saved-graph-controls {
-      display: grid;
-      grid-template-columns: minmax(140px, 1fr) 190px;
-      gap: 0.65rem;
-      align-items: end;
-    }
-
-    .saved-graph-controls input {
-      margin-bottom: 0;
-    }
-
     .saved-graph-list {
       display: flex;
       flex-wrap: wrap;
@@ -269,6 +278,12 @@
 
     .saved-graph-empty {
       margin: 0;
+      color: #4b5563;
+      font-size: 0.92rem;
+    }
+
+    .saved-graph-note {
+      margin: 0.65rem 0 0;
       color: #4b5563;
       font-size: 0.92rem;
     }
@@ -519,7 +534,8 @@
         grid-template-columns: 1fr;
       }
 
-      .matrix-input-panel {
+      .matrix-body,
+      .save-row {
         grid-template-columns: 1fr;
       }
 
@@ -550,6 +566,13 @@
         </div>
         <div class="primary-controls">
           <button id="generateGraphBtn">Generate Graph</button>
+          <div class="save-inline">
+            <label for="saveGraphNameInput">Save current graph as</label>
+            <div class="save-row">
+              <input id="saveGraphNameInput" type="text" placeholder="G">
+              <button id="saveGraphBtn" type="button" class="secondary">Save</button>
+            </div>
+          </div>
           <div class="toggle-row label-toggle-main">
             <input id="labelToggle" type="checkbox" checked>
             <label for="labelToggle">Show vertex labels</label>
@@ -557,31 +580,25 @@
         </div>
       </div>
 
-      <div class="matrix-input-panel">
-        <div>
-          <label for="matrixInput">Adjacency matrix</label>
-          <textarea id="matrixInput" placeholder="Example for P_3:
+      <details class="matrix-input-panel compact-details">
+        <summary>Adjacency matrix</summary>
+        <div class="matrix-body">
+          <div>
+            <label for="matrixInput">Paste matrix</label>
+            <textarea id="matrixInput" placeholder="Example for P_3:
 0 1 0
 1 0 1
 0 1 0"></textarea>
-        </div>
-        <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
-      </div>
-
-      <section class="saved-graphs" aria-label="Saved graphs">
-        <div class="saved-graph-header">
-          <strong>Saved graphs</strong>
-          <span>Save a graph as G, H, or a custom name, then reuse it in descriptions.</span>
-        </div>
-        <div class="saved-graph-controls">
-          <div>
-            <label for="saveGraphNameInput">Save current graph as</label>
-            <input id="saveGraphNameInput" type="text" placeholder="G">
           </div>
-          <button id="saveGraphBtn" type="button">Save Current Graph</button>
+          <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
         </div>
+      </details>
+
+      <details class="saved-graphs compact-details" aria-label="Saved graphs">
+        <summary>Saved graphs</summary>
+        <p class="saved-graph-note">Save a graph as G, H, or a custom name, then reuse it in descriptions.</p>
         <div id="savedGraphList" class="saved-graph-list"></div>
-      </section>
+      </details>
 
       <details class="dictionary">
         <summary>Graph description dictionary</summary>
