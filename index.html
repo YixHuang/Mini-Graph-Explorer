@@ -412,6 +412,8 @@
       margin: 0.65rem 0 0;
       color: #4b5563;
       font-size: 0.94rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }
 
     .list {
@@ -1022,6 +1024,7 @@
         vertexCount: nodes.length,
         edgePairs,
         displayName,
+        labels: nodes.map((node) => node.label),
         positions,
         layout: "standard",
         meta: currentGraphMeta || { type: "custom" }
@@ -2109,6 +2112,18 @@
       return adjacencyList.map((neighbors) => neighbors.reduce((mask, neighbor) => mask | (1 << neighbor), 0));
     }
 
+    function maskToVertexIndices(mask, vertexCount) {
+      const indices = [];
+
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+        if (mask & (1 << vertex)) {
+          indices.push(vertex);
+        }
+      }
+
+      return indices;
+    }
+
     function isMaskConnected(mask, adjacencyMasks, vertexCount) {
       if (!mask) {
         return false;
@@ -2178,7 +2193,18 @@
         .map((item) => item.vertex);
 
       if ((targetDefinition.edgePairs || []).length === 0) {
-        return { completed: true, found: targetDefinition.vertexCount <= hostVertexCount };
+        if (targetDefinition.vertexCount > hostVertexCount) {
+          return { completed: true, found: false };
+        }
+
+        return {
+          completed: true,
+          found: true,
+          witness: {
+            type: "branch-sets",
+            branchSets: Array.from({ length: targetDefinition.vertexCount }, (_, index) => [index])
+          }
+        };
       }
 
       if (hostVertexCount > 16 || activeTargetVertices.length > 9) {
@@ -2191,6 +2217,7 @@
       const stepLimit = 700000;
       let steps = 0;
       let aborted = false;
+      let successfulUsedMask = 0;
 
       function canUseCandidate(targetVertex, candidate) {
         for (let index = 0; index < activeTargetVertices.length; index += 1) {
@@ -2217,7 +2244,12 @@
         }
 
         if (position === activeTargetVertices.length) {
-          return hostVertexCount - countBits(usedMask) >= isolatedCount;
+          const enoughRoom = hostVertexCount - countBits(usedMask) >= isolatedCount;
+          if (enoughRoom) {
+            successfulUsedMask = usedMask;
+          }
+
+          return enoughRoom;
         }
 
         const targetVertex = activeTargetVertices[position];
@@ -2252,7 +2284,31 @@
       }
 
       const found = search(0, 0);
-      return { completed: !aborted, found };
+      if (!found) {
+        return { completed: !aborted, found: false };
+      }
+
+      const branchSets = assignedMasks.slice();
+      let remainingMask = ((1 << hostVertexCount) - 1) & ~successfulUsedMask;
+
+      for (let targetVertex = 0; targetVertex < targetDefinition.vertexCount; targetVertex += 1) {
+        if (branchSets[targetVertex]) {
+          continue;
+        }
+
+        const nextBit = remainingMask & -remainingMask;
+        branchSets[targetVertex] = nextBit;
+        remainingMask &= ~nextBit;
+      }
+
+      return {
+        completed: !aborted,
+        found: true,
+        witness: {
+          type: "branch-sets",
+          branchSets: branchSets.map((mask) => maskToVertexIndices(mask, hostVertexCount))
+        }
+      };
     }
 
     function hasSubgraphEmbedding(hostDefinition, targetDefinition) {
@@ -2320,12 +2376,27 @@
       }
 
       const found = search(0);
-      return { completed: !aborted, found };
+      return {
+        completed: !aborted,
+        found,
+        witness: found
+          ? {
+            type: "subgraph",
+            mapping: mapping.slice()
+          }
+          : null
+      };
     }
 
     function getMinorContainmentResult(hostDefinition, targetDefinition) {
       if (targetDefinition.vertexCount === 0) {
-        return { text: "Yes" };
+        return {
+          text: "Yes",
+          witness: {
+            type: "trivial",
+            description: "The empty graph is a minor of every graph."
+          }
+        };
       }
 
       if (hostDefinition.vertexCount === 0) {
@@ -2342,7 +2413,7 @@
 
       const subgraphSearch = hasSubgraphEmbedding(hostDefinition, targetDefinition);
       if (subgraphSearch.found) {
-        return { text: "Yes" };
+        return { text: "Yes", witness: subgraphSearch.witness };
       }
 
       const hostTreewidth = getTreewidthBoundsForDefinition(hostDefinition, false);
@@ -2353,14 +2424,56 @@
 
       const exactSearch = runExactMinorSearch(hostDefinition, targetDefinition);
       if (exactSearch.completed) {
-        return { text: exactSearch.found ? "Yes" : "No" };
+        return exactSearch.found
+          ? { text: "Yes", witness: exactSearch.witness }
+          : { text: "No" };
       }
 
       if (exactSearch.found) {
-        return { text: "Yes" };
+        return { text: "Yes", witness: exactSearch.witness };
       }
 
       return { text: "Search too large for exact minor test" };
+    }
+
+    function getDefinitionVertexLabel(definition, index) {
+      if (definition.labels && definition.labels[index]) {
+        return definition.labels[index];
+      }
+
+      return makeNodeLabel(index, definition.vertexCount);
+    }
+
+    function formatHostVertexSet(hostDefinition, indices) {
+      return `{${indices.map((index) => getDefinitionVertexLabel(hostDefinition, index)).join(", ")}}`;
+    }
+
+    function formatMinorWitness(result, hostDefinition, targetDefinition) {
+      if (result.text !== "Yes" || !result.witness) {
+        return "";
+      }
+
+      if (result.witness.type === "trivial") {
+        return ` Witness: ${result.witness.description}`;
+      }
+
+      if (result.witness.type === "subgraph") {
+        const mappings = result.witness.mapping.map((hostIndex, targetIndex) => (
+          `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${getDefinitionVertexLabel(hostDefinition, hostIndex)}`
+        ));
+
+        return ` Witness as subgraph: ${mappings.join("; ")}.`;
+      }
+
+      if (result.witness.type === "branch-sets") {
+        const branchSets = result.witness.branchSets.map((hostIndices, targetIndex) => (
+          `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${formatHostVertexSet(hostDefinition, hostIndices)}`
+        ));
+
+        return ` Witness branch sets: ${branchSets.join("; ")}.`;
+      }
+
+      return "";
     }
 
     function runFindMinor() {
@@ -2384,7 +2497,7 @@
 
       const hostDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
       const result = getMinorContainmentResult(hostDefinition, targetDefinition);
-      minorResultText = `${targetDefinition.displayName} minor? ${result.text}`;
+      minorResultText = `${targetDefinition.displayName} minor? ${result.text}.${formatMinorWitness(result, hostDefinition, targetDefinition)}`;
       updateView();
     }
 
