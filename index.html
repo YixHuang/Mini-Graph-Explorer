@@ -97,13 +97,13 @@
     input,
     textarea {
       width: 100%;
-      padding: 0.7rem 0.8rem;
+      padding: 0.55rem 0.7rem;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #fff;
       color: var(--ink);
       font: inherit;
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.55rem;
     }
 
     textarea {
@@ -113,8 +113,8 @@
 
     .prompt-panel {
       display: grid;
-      gap: 0.9rem;
-      padding: 1rem;
+      gap: 0.6rem;
+      padding: 0.85rem;
     }
 
     .prompt-main {
@@ -128,7 +128,7 @@
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.58);
-      padding: 0.85rem;
+      padding: 0.6rem 0.75rem;
     }
 
     .compact-details summary {
@@ -137,12 +137,30 @@
       color: var(--accent);
     }
 
+    .top-tools {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      align-items: start;
+    }
+
+    .top-tools .compact-details[open] {
+      grid-column: 1 / -1;
+    }
+
+    .top-tools .saved-graphs,
+    .top-tools .dictionary {
+      background: rgba(255, 255, 255, 0.58);
+      border-color: rgba(30, 111, 92, 0.16);
+      padding: 0.6rem 0.75rem;
+    }
+
     .matrix-body {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 190px;
-      gap: 0.9rem;
+      gap: 0.6rem;
       align-items: end;
-      margin-top: 0.75rem;
+      margin-top: 0.6rem;
     }
 
     .prompt-panel textarea,
@@ -162,14 +180,14 @@
 
     .primary-controls {
       display: grid;
-      gap: 0.65rem;
+      gap: 0.5rem;
     }
 
     .save-inline {
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.72);
-      padding: 0.65rem;
+      padding: 0.55rem;
     }
 
     .save-inline label {
@@ -179,7 +197,7 @@
 
     .save-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 86px;
+      grid-template-columns: minmax(0, 1fr) 72px;
       gap: 0.45rem;
     }
 
@@ -192,10 +210,13 @@
       padding-inline: 0.7rem;
     }
 
-    .label-toggle-main {
+    .view-label-toggle {
+      width: auto;
       margin-bottom: 0;
+      padding: 0.5rem 0.65rem;
       border-color: rgba(30, 111, 92, 0.3);
       background: linear-gradient(135deg, #eef8f4, #ffffff);
+      white-space: nowrap;
     }
 
     .dictionary {
@@ -218,8 +239,8 @@
 
     .dictionary-list {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 0.65rem;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.5rem;
       margin-top: 0.75rem;
     }
 
@@ -298,12 +319,23 @@
     .control-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
+      gap: 0.5rem;
     }
 
     .control-grid label,
     .control-grid input {
       margin-bottom: 0.45rem;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .button-row button {
+      margin-bottom: 0;
     }
 
     .color-row {
@@ -322,8 +354,8 @@
     .toggle-row {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
-      padding: 0.8rem 0.9rem;
+      gap: 0.5rem;
+      padding: 0.6rem 0.7rem;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #fff;
@@ -343,12 +375,13 @@
 
     button {
       width: 100%;
-      padding: 0.75rem 0.9rem;
+      padding: 0.52rem 0.75rem;
       border: none;
       border-radius: 999px;
       background: var(--accent);
       color: #fff;
       font: inherit;
+      font-size: 0.92rem;
       font-weight: 700;
       cursor: pointer;
       transition: transform 120ms ease, opacity 120ms ease;
@@ -374,9 +407,9 @@
     .property,
     .list {
       border-radius: 12px;
-      padding: 0.85rem;
+      padding: 0.65rem;
       background: var(--accent-soft);
-      margin-top: 0.85rem;
+      margin-top: 0.65rem;
     }
 
     .status {
@@ -391,33 +424,42 @@
 
     .property-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-      gap: 0.55rem;
+      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+      gap: 0.38rem;
     }
 
     .property-card {
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 10px;
-      padding: 0.65rem 0.7rem;
+      padding: 0.42rem 0.5rem;
     }
 
     .property-card span {
       display: block;
       color: #4b5563;
-      font-size: 0.86rem;
+      font-size: 0.78rem;
+      line-height: 1.15;
     }
 
     .property-card strong {
       display: block;
-      margin-top: 0.18rem;
+      margin-top: 0.12rem;
       color: var(--accent);
-      font-size: 1.02rem;
+      font-size: 0.95rem;
+      line-height: 1.15;
+    }
+
+    .property-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr);
+      gap: 0.5rem;
+      margin-top: 0.55rem;
+      align-items: stretch;
     }
 
     .minor-finder {
-      margin-top: 0.85rem;
-      padding: 0.85rem;
+      padding: 0.6rem;
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.72);
@@ -429,8 +471,8 @@
 
     .minor-controls {
       display: grid;
-      grid-template-columns: minmax(160px, 1fr) 150px;
-      gap: 0.65rem;
+      grid-template-columns: minmax(120px, 1fr) 112px;
+      gap: 0.45rem;
       align-items: end;
     }
 
@@ -446,17 +488,29 @@
     }
 
     .spectrum-controls button {
-      width: auto;
-      min-width: 170px;
+      width: 100%;
+      min-width: 0;
       margin-bottom: 0;
     }
 
     .minor-result {
-      margin: 0.65rem 0 0;
+      margin: 0.45rem 0 0;
       color: #4b5563;
-      font-size: 0.94rem;
-      line-height: 1.45;
+      font-size: 0.86rem;
+      line-height: 1.35;
       overflow-wrap: anywhere;
+    }
+
+    .graph-view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .graph-view-header h2 {
+      margin: 0;
     }
 
     .list {
@@ -467,8 +521,8 @@
     }
 
     .size-row {
-      margin-bottom: 0.85rem;
-      padding: 0.8rem 0.9rem;
+      margin-bottom: 0.65rem;
+      padding: 0.65rem 0.75rem;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #fff;
@@ -534,6 +588,11 @@
         grid-template-columns: 1fr;
       }
 
+      .top-tools,
+      .property-actions {
+        grid-template-columns: 1fr;
+      }
+
       .matrix-body,
       .save-row {
         grid-template-columns: 1fr;
@@ -573,38 +632,36 @@
               <button id="saveGraphBtn" type="button" class="secondary">Save</button>
             </div>
           </div>
-          <div class="toggle-row label-toggle-main">
-            <input id="labelToggle" type="checkbox" checked>
-            <label for="labelToggle">Show vertex labels</label>
-          </div>
         </div>
       </div>
 
-      <details class="matrix-input-panel compact-details">
-        <summary>Adjacency matrix</summary>
-        <div class="matrix-body">
-          <div>
-            <label for="matrixInput">Paste matrix</label>
-            <textarea id="matrixInput" placeholder="Example for P_3:
+      <div class="top-tools">
+        <details class="matrix-input-panel compact-details">
+          <summary>Adjacency matrix</summary>
+          <div class="matrix-body">
+            <div>
+              <label for="matrixInput">Paste matrix</label>
+              <textarea id="matrixInput" placeholder="Example for P_3:
 0 1 0
 1 0 1
 0 1 0"></textarea>
+            </div>
+            <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
           </div>
-          <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
-        </div>
-      </details>
+        </details>
 
-      <details class="saved-graphs compact-details" aria-label="Saved graphs">
-        <summary>Saved graphs</summary>
-        <p class="saved-graph-note">Save a graph as G, H, or a custom name, then reuse it in descriptions.</p>
-        <div id="savedGraphList" class="saved-graph-list"></div>
-      </details>
+        <details class="saved-graphs compact-details" aria-label="Saved graphs">
+          <summary>Saved graphs</summary>
+          <p class="saved-graph-note">Save a graph as G, H, or a custom name, then reuse it in descriptions.</p>
+          <div id="savedGraphList" class="saved-graph-list"></div>
+        </details>
 
-      <details class="dictionary">
-        <summary>Graph description dictionary</summary>
-        <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, complement, Cartesian product...">
-        <div id="dictionaryList" class="dictionary-list"></div>
-      </details>
+        <details class="dictionary compact-details">
+          <summary>Dictionary</summary>
+          <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, complement, Cartesian product...">
+          <div id="dictionaryList" class="dictionary-list"></div>
+        </details>
+      </div>
     </section>
 
     <section class="layout">
@@ -613,16 +670,18 @@
 
         <div class="control-grid">
           <div>
-            <label for="nodeInput">Add node</label>
+            <label for="nodeInput">Add vertex</label>
             <input id="nodeInput" type="text" placeholder="A">
           </div>
           <div>
-            <label for="deleteNodeInput">Delete node</label>
+            <label for="deleteNodeInput">Delete vertex</label>
             <input id="deleteNodeInput" type="text" placeholder="A">
           </div>
         </div>
-        <button id="addNodeBtn">Add Node</button>
-        <button id="deleteNodeBtn" class="secondary">Delete Node</button>
+        <div class="button-row">
+          <button id="addNodeBtn">+ Add Vertex</button>
+          <button id="deleteNodeBtn" class="secondary">- Delete Vertex</button>
+        </div>
 
         <div class="control-grid">
           <div>
@@ -634,8 +693,6 @@
             <input id="toInput" type="text" placeholder="B">
           </div>
         </div>
-        <button id="addEdgeBtn">Add Edge</button>
-
         <div class="control-grid">
           <div>
             <label for="deleteFromInput">Delete from</label>
@@ -646,7 +703,10 @@
             <input id="deleteToInput" type="text" placeholder="B">
           </div>
         </div>
-        <button id="deleteEdgeBtn" class="secondary">Delete Edge</button>
+        <div class="button-row">
+          <button id="addEdgeBtn">+ Add Edge</button>
+          <button id="deleteEdgeBtn" class="secondary">- Delete Edge</button>
+        </div>
 
         <div class="size-row">
           <div class="size-row-header">
@@ -677,7 +737,13 @@
       </aside>
 
       <section class="panel">
-        <h2>Graph View</h2>
+        <div class="graph-view-header">
+          <h2>Graph View</h2>
+          <div class="toggle-row view-label-toggle">
+            <input id="labelToggle" type="checkbox" checked>
+            <label for="labelToggle">Show vertex labels</label>
+          </div>
+        </div>
         <div class="canvas-wrap">
           <canvas id="graphCanvas" width="700" height="520" aria-label="Graph visualization"></canvas>
         </div>
@@ -717,6 +783,7 @@
     const savedGraphList = document.getElementById("savedGraphList");
     const dictionarySearch = document.getElementById("dictionarySearch");
     const dictionaryList = document.getElementById("dictionaryList");
+    const topToolDetails = Array.from(document.querySelectorAll(".top-tools details"));
     const matrixInput = document.getElementById("matrixInput");
     const generateMatrixBtn = document.getElementById("generateMatrixBtn");
     const status = document.getElementById("status");
@@ -4021,20 +4088,22 @@
       propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value]) => (
         `<div class="property-card"><span>${name}</span><strong>${value}</strong></div>`
       )).join("")}</div>
-      <div class="minor-finder">
-        <label for="minorInput">Find minor</label>
-        <div class="minor-controls">
-          <input id="minorInput" type="text" value="${escapeHtml(minorQuery)}" placeholder="Examples: K5, C3, Petersen graph, G">
-          <button id="findMinorBtn" type="button">Find Minor</button>
+      <div class="property-actions">
+        <div class="minor-finder">
+          <label for="minorInput">Find minor</label>
+          <div class="minor-controls">
+            <input id="minorInput" type="text" value="${escapeHtml(minorQuery)}" placeholder="Examples: K5, C3, Petersen graph, G">
+            <button id="findMinorBtn" type="button">Find</button>
+          </div>
+          <p id="minorResult" class="minor-result">${escapeHtml(minorResultText)}</p>
         </div>
-        <p id="minorResult" class="minor-result">${escapeHtml(minorResultText)}</p>
-      </div>
-      <div class="minor-finder">
-        <label>Spectrum</label>
-        <div class="spectrum-controls">
-          <button id="computeSpectrumBtn" type="button">Compute Spectrum</button>
+        <div class="minor-finder">
+          <label>Spectrum</label>
+          <div class="spectrum-controls">
+            <button id="computeSpectrumBtn" type="button">Compute Spectrum</button>
+          </div>
+          <p id="spectrumResult" class="minor-result">${escapeHtml(spectrumResultText)}</p>
         </div>
-        <p id="spectrumResult" class="minor-result">${escapeHtml(spectrumResultText)}</p>
       </div>`;
     }
 
@@ -5639,6 +5708,19 @@
     });
 
     dictionarySearch.addEventListener("input", renderDescriptionDictionary);
+    topToolDetails.forEach((details) => {
+      details.addEventListener("toggle", () => {
+        if (!details.open) {
+          return;
+        }
+
+        for (const otherDetails of topToolDetails) {
+          if (otherDetails !== details) {
+            otherDetails.open = false;
+          }
+        }
+      });
+    });
 
     dictionaryList.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-example]");
