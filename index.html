@@ -2124,6 +2124,48 @@
       return indices;
     }
 
+    function getDefinitionEdgePairs(definition) {
+      return (definition.edgePairs || [])
+        .filter((edge) => edge.from !== edge.to)
+        .map((edge) => ({
+          from: Math.min(edge.from, edge.to),
+          to: Math.max(edge.from, edge.to)
+        }))
+        .filter((edge, index, list) => (
+          list.findIndex((other) => other.from === edge.from && other.to === edge.to) === index
+        ));
+    }
+
+    function getBranchSetEdgeWitnesses(hostDefinition, targetDefinition, branchSets) {
+      const hostAdjacencyList = definitionToAdjacencyList(hostDefinition);
+
+      return getDefinitionEdgePairs(targetDefinition).map((targetEdge) => {
+        const fromSet = new Set(branchSets[targetEdge.from] || []);
+        const toSet = new Set(branchSets[targetEdge.to] || []);
+        let hostEdge = null;
+
+        for (const hostFrom of fromSet) {
+          for (const hostTo of hostAdjacencyList[hostFrom] || []) {
+            if (toSet.has(hostTo)) {
+              hostEdge = { from: hostFrom, to: hostTo };
+              break;
+            }
+          }
+
+          if (hostEdge) {
+            break;
+          }
+        }
+
+        return {
+          targetFrom: targetEdge.from,
+          targetTo: targetEdge.to,
+          hostFrom: hostEdge ? hostEdge.from : null,
+          hostTo: hostEdge ? hostEdge.to : null
+        };
+      });
+    }
+
     function isMaskConnected(mask, adjacencyMasks, vertexCount) {
       if (!mask) {
         return false;
@@ -2382,7 +2424,8 @@
         witness: found
           ? {
             type: "subgraph",
-            mapping: mapping.slice()
+            mapping: mapping.slice(),
+            branchSets: mapping.map((hostIndex) => [hostIndex])
           }
           : null
       };
@@ -2448,6 +2491,33 @@
       return `{${indices.map((index) => getDefinitionVertexLabel(hostDefinition, index)).join(", ")}}`;
     }
 
+    function formatMinorEdgeWitnesses(result, hostDefinition, targetDefinition) {
+      const branchSets = result.witness.branchSets;
+      const targetEdges = getDefinitionEdgePairs(targetDefinition);
+
+      if (!branchSets || targetEdges.length === 0) {
+        return "";
+      }
+
+      const edgeWitnesses = getBranchSetEdgeWitnesses(hostDefinition, targetDefinition, branchSets);
+      const formattedWitnesses = edgeWitnesses.map((edge) => {
+        const targetEdgeLabel = [
+          getDefinitionVertexLabel(targetDefinition, edge.targetFrom),
+          getDefinitionVertexLabel(targetDefinition, edge.targetTo)
+        ].join("-");
+        const hostEdgeLabel = edge.hostFrom === null
+          ? "missing host edge"
+          : [
+            getDefinitionVertexLabel(hostDefinition, edge.hostFrom),
+            getDefinitionVertexLabel(hostDefinition, edge.hostTo)
+          ].join("-");
+
+        return `${targetEdgeLabel} by ${hostEdgeLabel}`;
+      });
+
+      return ` Edge witnesses: ${formattedWitnesses.join("; ")}.`;
+    }
+
     function formatMinorWitness(result, hostDefinition, targetDefinition) {
       if (result.text !== "Yes" || !result.witness) {
         return "";
@@ -2462,7 +2532,7 @@
           `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${getDefinitionVertexLabel(hostDefinition, hostIndex)}`
         ));
 
-        return ` Witness as subgraph: ${mappings.join("; ")}.`;
+        return ` Witness as subgraph: ${mappings.join("; ")}.${formatMinorEdgeWitnesses(result, hostDefinition, targetDefinition)}`;
       }
 
       if (result.witness.type === "branch-sets") {
@@ -2470,7 +2540,7 @@
           `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${formatHostVertexSet(hostDefinition, hostIndices)}`
         ));
 
-        return ` Witness branch sets: ${branchSets.join("; ")}.`;
+        return ` Witness branch sets: ${branchSets.join("; ")}.${formatMinorEdgeWitnesses(result, hostDefinition, targetDefinition)}`;
       }
 
       return "";
