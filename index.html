@@ -739,7 +739,7 @@
 
         <div class="size-row">
           <div class="size-row-header">
-            <label for="sizeSlider">Node size</label>
+            <label for="sizeSlider">Vertex size</label>
             <output id="sizeValue" for="sizeSlider">14 px</output>
           </div>
           <input id="sizeSlider" type="range" min="3" max="42" step="1" value="14">
@@ -747,7 +747,7 @@
 
         <div class="color-row">
           <div>
-            <label for="nodeColorInput">Node color</label>
+            <label for="nodeColorInput">Vertex color</label>
             <input id="nodeColorInput" type="color" value="#1e6f5c">
           </div>
           <div>
@@ -758,7 +758,7 @@
 
         <button id="resetBtn" class="secondary">Clear Graph</button>
 
-        <div id="status" class="status">Your graph is empty. Add a node to begin.</div>
+        <div id="status" class="status">Your graph is empty. Add a vertex to begin.</div>
         <div id="listBox" class="list"></div>
       </aside>
 
@@ -1297,12 +1297,12 @@
       const cleanName = normalizeName(name);
 
       if (!cleanName) {
-        status.textContent = "Please type a node name first.";
+        status.textContent = "Please type a vertex name first.";
         return;
       }
 
       if (findNodeByLabel(cleanName)) {
-        status.textContent = "That node already exists.";
+        status.textContent = "That vertex already exists.";
         return;
       }
 
@@ -1311,7 +1311,7 @@
       currentGraphName = "Custom graph";
       currentGraphMeta = { type: "custom" };
       resetMinorResultForGraphChange();
-      status.textContent = `Added node "${cleanName}".`;
+      status.textContent = `Added vertex "${cleanName}".`;
       updateView();
     }
 
@@ -1320,12 +1320,12 @@
       const end = normalizeName(to);
 
       if (!start || !end) {
-        status.textContent = "Type both node names before adding an edge.";
+        status.textContent = "Type both vertex names before adding an edge.";
         return;
       }
 
       if (start === end) {
-        status.textContent = "Use two different nodes for an edge.";
+        status.textContent = "Use two different vertices for an edge.";
         return;
       }
 
@@ -1333,7 +1333,7 @@
       const toNode = findNodeByLabel(end);
 
       if (!fromNode || !toNode) {
-        status.textContent = "Both nodes must exist before you connect them.";
+        status.textContent = "Both vertices must exist before you connect them.";
         return;
       }
 
@@ -1359,14 +1359,14 @@
       const cleanName = normalizeName(name);
 
       if (!cleanName) {
-        status.textContent = "Type the node name you want to delete.";
+        status.textContent = "Type the vertex name you want to delete.";
         return;
       }
 
       const nodeIndex = nodes.findIndex((node) => node.label === cleanName);
 
       if (nodeIndex === -1) {
-        status.textContent = `Node "${cleanName}" does not exist.`;
+        status.textContent = `Vertex "${cleanName}" does not exist.`;
         return;
       }
 
@@ -1383,7 +1383,7 @@
         }
       }
 
-      status.textContent = `Deleted node "${cleanName}" and its connected edges.`;
+      status.textContent = `Deleted vertex "${cleanName}" and its connected edges.`;
       updateView();
     }
 
@@ -1392,7 +1392,7 @@
       const end = normalizeName(to);
 
       if (!start || !end) {
-        status.textContent = "Type both node names before deleting an edge.";
+        status.textContent = "Type both vertex names before deleting an edge.";
         return;
       }
 
@@ -1423,8 +1423,8 @@
       labelToggle.checked = showLabels;
       saveLabelPreference(showLabels);
       status.textContent = showLabels
-        ? "Node labels are now visible."
-        : "Node labels are now hidden.";
+        ? "Vertex labels are now visible."
+        : "Vertex labels are now hidden.";
       updateView();
     }
 
@@ -3360,14 +3360,14 @@
 
     function computeSpectrum() {
       if (nodes.length === 0) {
-        spectrumResultText = "Spectrum: ∅. The empty graph has no adjacency eigenvalues.";
+        spectrumResultText = "∅. The empty graph has no adjacency eigenvalues.";
         updateView();
         return;
       }
 
       const matrix = buildAdjacencyMatrix();
       const eigenvalues = jacobiEigenvaluesSymmetric(matrix);
-      spectrumResultText = `Spectrum of A(G): ${formatSpectrum(eigenvalues)}.`;
+      spectrumResultText = `${formatSpectrum(eigenvalues)}.`;
       status.textContent = `Computed adjacency spectrum for ${currentGraphName}.`;
       updateView();
     }
@@ -4136,7 +4136,7 @@
         ? edges.map((edge) => `${edge.from} - ${edge.to}`).join("\n")
         : "(none)";
 
-      listBox.textContent = `Graph: ${currentGraphName}\nNodes: ${nodeText}\nEdges:\n${edgeText}\nLabels shown: ${showLabels ? "yes" : "no"}\nNode size: ${physics.nodeRadius}px`;
+      listBox.textContent = `Graph: ${currentGraphName}\nVertices: ${nodeText}\nEdges:\n${edgeText}\nVertex labels shown: ${showLabels ? "yes" : "no"}\nVertex size: ${physics.nodeRadius}px`;
       undoBtn.disabled = undoStack.length === 0;
       redoBtn.disabled = redoStack.length === 0;
     }
@@ -4178,7 +4178,7 @@
         clampNode(node);
       }
 
-      status.textContent = `Node size set to ${nextRadius}px.`;
+      status.textContent = `Vertex size set to ${nextRadius}px.`;
       updateView();
     }
 
@@ -4189,7 +4189,7 @@
         saveUndoState();
         nodeColor = nextColor;
         nodeColorInput.value = nodeColor;
-        status.textContent = "Node color updated.";
+        status.textContent = "Vertex color updated.";
         updateView();
       }
 
