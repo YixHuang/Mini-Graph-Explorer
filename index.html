@@ -709,7 +709,8 @@
     const ctx = graphCanvas.getContext("2d");
     const undoStack = [];
     const redoStack = [];
-    const maxExactPropertyVertices = 20;
+    const maxExactPropertyVertices = 30;
+    const maxBitmaskPropertyVertices = 20;
     const maxExactEdgeColoringEdges = 28;
     const hardSearchStepLimit = 120000;
     const maxGeneratedVertices = 80;
@@ -1613,12 +1614,30 @@
         return { computed: true, text: "Yes" };
       }
 
+      if (currentGraphMeta.type === "path") {
+        return { computed: true, text: "No" };
+      }
+
+      if (currentGraphMeta.type === "cycle" || currentGraphMeta.type === "wheel") {
+        return { computed: true, text: "Yes" };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        const total = currentGraphMeta.parts.reduce((sum, part) => sum + part, 0);
+        const largest = Math.max(...currentGraphMeta.parts);
+        return { computed: true, text: largest <= total - largest ? "Yes" : "No" };
+      }
+
+      if (currentGraphMeta.type === "cube") {
+        return { computed: true, text: currentGraphMeta.dimension >= 2 ? "Yes" : "No" };
+      }
+
       const { adjacencyList, adjacencyMasks } = buildAdjacencyInfo();
       if (adjacencyList.some((neighbors) => neighbors.length < 2)) {
         return { computed: true, text: "No" };
       }
 
-      if (vertexCount > maxExactPropertyVertices) {
+      if (vertexCount > maxBitmaskPropertyVertices) {
         return getHamiltonianSearchResult(adjacencyList);
       }
 
@@ -2652,7 +2671,27 @@
         return { text: String(vertexCount) };
       }
 
-      if (vertexCount > maxExactPropertyVertices) {
+      if (currentGraphMeta.type === "path") {
+        return { text: String(Math.ceil(vertexCount / 2)) };
+      }
+
+      if (currentGraphMeta.type === "cycle") {
+        return { text: String(Math.floor(vertexCount / 2)) };
+      }
+
+      if (currentGraphMeta.type === "wheel") {
+        return { text: String(Math.floor(currentGraphMeta.rimSize / 2)) };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        return { text: String(Math.max(...currentGraphMeta.parts)) };
+      }
+
+      if (currentGraphMeta.type === "cube" && currentGraphMeta.dimension >= 1) {
+        return { text: String(2 ** (currentGraphMeta.dimension - 1)) };
+      }
+
+      if (vertexCount > maxBitmaskPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
         return { text: `≥ ${getGreedyIndependenceLowerBound(adjacencyList)}` };
       }
@@ -2690,8 +2729,14 @@
         .sort((a, b) => b.degree - a.degree)
         .map((item) => item.vertex);
       const colors = Array(adjacencyList.length).fill(-1);
+      let steps = 0;
 
       function assign(position) {
+        steps += 1;
+        if (steps > hardSearchStepLimit) {
+          return null;
+        }
+
         if (position === order.length) {
           return true;
         }
@@ -2709,8 +2754,9 @@
 
           if (allowed) {
             colors[vertex] = color;
-            if (assign(position + 1)) {
-              return true;
+            const result = assign(position + 1);
+            if (result === true || result === null) {
+              return result;
             }
             colors[vertex] = -1;
           }
@@ -2737,6 +2783,26 @@
         return { text: "1" };
       }
 
+      if (currentGraphMeta.type === "path") {
+        return { text: vertexCount <= 1 ? "1" : "2" };
+      }
+
+      if (currentGraphMeta.type === "cycle") {
+        return { text: vertexCount % 2 === 0 ? "2" : "3" };
+      }
+
+      if (currentGraphMeta.type === "wheel") {
+        return { text: currentGraphMeta.rimSize % 2 === 0 ? "3" : "4" };
+      }
+
+      if (currentGraphMeta.type === "multipartite") {
+        return { text: String(currentGraphMeta.parts.length) };
+      }
+
+      if (currentGraphMeta.type === "cube") {
+        return { text: "2" };
+      }
+
       if (vertexCount > maxExactPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
         const bipartition = getBipartition(adjacencyList);
@@ -2750,8 +2816,13 @@
 
       const { adjacencyList } = buildAdjacencyInfo();
       for (let colorCount = 1; colorCount <= vertexCount; colorCount += 1) {
-        if (canColorVertices(colorCount, adjacencyList)) {
+        const coloringResult = canColorVertices(colorCount, adjacencyList);
+        if (coloringResult === true) {
           return { text: String(colorCount) };
+        }
+
+        if (coloringResult === null) {
+          return { text: `≤ ${getGreedyChromaticUpperBound(adjacencyList)}` };
         }
       }
 
@@ -3272,7 +3343,7 @@
         return { text: currentGraphMeta.dimension === 1 ? "1" : "1" };
       }
 
-      if (nodes.length > maxExactPropertyVertices) {
+      if (nodes.length > maxBitmaskPropertyVertices) {
         const { adjacencyList } = buildAdjacencyInfo();
         const vertexConnectivity = Number(getVertexConnectivityResult().text.replace(/[^0-9.]/g, ""));
         return { text: `≤ ${formatFraction(Math.max(0, vertexConnectivity || 0), 2)}` };
@@ -3694,30 +3765,43 @@
       const vertexCount = nodes.length;
 
       if (vertexCount <= maxExactPropertyVertices) {
+        let steps = 0;
+
         for (let start = 0; start < vertexCount; start += 1) {
           const used = Array(vertexCount).fill(false);
           used[start] = true;
 
           function search(current, depth) {
+            steps += 1;
+            if (steps > hardSearchStepLimit) {
+              return "limit";
+            }
+
             if (depth === vertexCount) {
-              return true;
+              return "found";
             }
 
             for (const next of adjacencyList[current]) {
               if (!used[next]) {
                 used[next] = true;
-                if (search(next, depth + 1)) {
-                  return true;
+                const result = search(next, depth + 1);
+                if (result === "found" || result === "limit") {
+                  return result;
                 }
                 used[next] = false;
               }
             }
 
-            return false;
+            return "continue";
           }
 
-          if (search(start, 1)) {
+          const result = search(start, 1);
+          if (result === "found") {
             return { text: "Yes" };
+          }
+
+          if (result === "limit") {
+            return { text: "Unknown (bounded search)" };
           }
         }
 
