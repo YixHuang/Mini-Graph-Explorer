@@ -124,6 +124,21 @@
       align-items: end;
     }
 
+    .description-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 104px;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+
+    .description-row textarea {
+      min-height: 2.8rem;
+    }
+
+    .description-row button {
+      margin-bottom: 0;
+    }
+
     .compact-details {
       border: 1px solid rgba(30, 111, 92, 0.16);
       border-radius: 14px;
@@ -144,12 +159,31 @@
       align-items: start;
     }
 
-    .top-tools .compact-details[open] {
-      grid-column: 1 / -1;
+    .tool-tab {
+      margin-bottom: 0;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--accent);
+      border: 1px solid rgba(30, 111, 92, 0.16);
+      border-radius: 14px;
+      box-shadow: none;
     }
 
-    .top-tools .saved-graphs,
-    .top-tools .dictionary {
+    .tool-tab[aria-expanded="true"] {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tool-panel {
+      display: none;
+      margin-top: 0.55rem;
+    }
+
+    .tool-panel.is-open {
+      display: block;
+    }
+
+    .top-tool-panels .saved-graphs,
+    .top-tool-panels .dictionary {
       background: rgba(255, 255, 255, 0.58);
       border-color: rgba(30, 111, 92, 0.16);
       padding: 0.6rem 0.75rem;
@@ -167,6 +201,10 @@
     .dictionary-search {
       margin-bottom: 0;
       min-height: 4.2rem;
+    }
+
+    .prompt-panel .description-row textarea {
+      min-height: 2.8rem;
     }
 
     .prompt-panel button {
@@ -589,6 +627,7 @@
       }
 
       .top-tools,
+      .description-row,
       .property-actions {
         grid-template-columns: 1fr;
       }
@@ -621,10 +660,12 @@
       <div class="prompt-main">
         <div>
           <label for="descriptionInput">Describe a graph</label>
-          <textarea id="descriptionInput" placeholder="Examples: C3, K5, 3K5, complement of C5, Q3, W5, Petersen graph, Cartesian product of C4 and P3"></textarea>
+          <div class="description-row">
+            <textarea id="descriptionInput" rows="2" placeholder="Examples: C3, K5, Petersen graph, Cartesian product of C4 and P3"></textarea>
+            <button id="generateGraphBtn">Generate</button>
+          </div>
         </div>
         <div class="primary-controls">
-          <button id="generateGraphBtn">Generate Graph</button>
           <div class="save-inline">
             <label for="saveGraphNameInput">Save current graph as</label>
             <div class="save-row">
@@ -636,8 +677,13 @@
       </div>
 
       <div class="top-tools">
-        <details class="matrix-input-panel compact-details">
-          <summary>Adjacency matrix</summary>
+        <button type="button" class="tool-tab" data-tool-tab="matrix" aria-expanded="false" aria-controls="matrixToolPanel">Adjacency matrix</button>
+        <button type="button" class="tool-tab" data-tool-tab="saved" aria-expanded="false" aria-controls="savedToolPanel">Saved graphs</button>
+        <button type="button" class="tool-tab" data-tool-tab="dictionary" aria-expanded="false" aria-controls="dictionaryToolPanel">Dictionary</button>
+      </div>
+
+      <div class="top-tool-panels">
+        <section id="matrixToolPanel" class="tool-panel matrix-input-panel compact-details" data-tool-panel="matrix">
           <div class="matrix-body">
             <div>
               <label for="matrixInput">Paste matrix</label>
@@ -648,19 +694,17 @@
             </div>
             <button id="generateMatrixBtn" type="button" class="secondary">Load Matrix</button>
           </div>
-        </details>
+        </section>
 
-        <details class="saved-graphs compact-details" aria-label="Saved graphs">
-          <summary>Saved graphs</summary>
+        <section id="savedToolPanel" class="tool-panel saved-graphs compact-details" data-tool-panel="saved" aria-label="Saved graphs">
           <p class="saved-graph-note">Save a graph as G, H, or a custom name, then reuse it in descriptions.</p>
           <div id="savedGraphList" class="saved-graph-list"></div>
-        </details>
+        </section>
 
-        <details class="dictionary compact-details">
-          <summary>Dictionary</summary>
+        <section id="dictionaryToolPanel" class="tool-panel dictionary compact-details" data-tool-panel="dictionary">
           <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, complement, Cartesian product...">
           <div id="dictionaryList" class="dictionary-list"></div>
-        </details>
+        </section>
       </div>
     </section>
 
@@ -688,6 +732,10 @@
           <button id="addEdgeBtn">Add</button>
           <button id="deleteEdgeBtn" class="secondary">Delete</button>
         </div>
+        <div class="button-row">
+          <button id="undoBtn" class="secondary">Undo</button>
+          <button id="redoBtn" class="secondary">Redo</button>
+        </div>
 
         <div class="size-row">
           <div class="size-row-header">
@@ -708,9 +756,6 @@
           </div>
         </div>
 
-        <button id="sampleBtn" class="secondary">Load Sample Graph</button>
-        <button id="undoBtn" class="secondary">Undo Last Step</button>
-        <button id="redoBtn" class="secondary">Redo Last Step</button>
         <button id="resetBtn" class="secondary">Clear Graph</button>
 
         <div id="status" class="status">Your graph is empty. Add a node to begin.</div>
@@ -745,7 +790,6 @@
     const deleteNodeBtn = document.getElementById("deleteNodeBtn");
     const addEdgeBtn = document.getElementById("addEdgeBtn");
     const deleteEdgeBtn = document.getElementById("deleteEdgeBtn");
-    const sampleBtn = document.getElementById("sampleBtn");
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
     const resetBtn = document.getElementById("resetBtn");
@@ -761,7 +805,8 @@
     const savedGraphList = document.getElementById("savedGraphList");
     const dictionarySearch = document.getElementById("dictionarySearch");
     const dictionaryList = document.getElementById("dictionaryList");
-    const topToolDetails = Array.from(document.querySelectorAll(".top-tools details"));
+    const topToolButtons = Array.from(document.querySelectorAll("[data-tool-tab]"));
+    const topToolPanels = Array.from(document.querySelectorAll("[data-tool-panel]"));
     const matrixInput = document.getElementById("matrixInput");
     const generateMatrixBtn = document.getElementById("generateMatrixBtn");
     const status = document.getElementById("status");
@@ -5432,25 +5477,6 @@
       updateView();
     }
 
-    function loadSampleGraph() {
-      clearGraphData();
-
-      const sampleNodes = ["A", "B", "C", "D", "E"];
-      for (const label of sampleNodes) {
-        nodes.push(createNode(label));
-      }
-
-      edges.push(
-        { from: "A", to: "B", key: "A--B" },
-        { from: "A", to: "C", key: "A--C" },
-        { from: "B", to: "D", key: "B--D" },
-        { from: "C", to: "D", key: "C--D" },
-        { from: "D", to: "E", key: "D--E" }
-      );
-      currentGraphName = "Sample graph";
-      currentGraphMeta = { type: "custom" };
-    }
-
     function getPointerPosition(event) {
       const rect = graphCanvas.getBoundingClientRect();
       const scaleX = graphCanvas.width / rect.width;
@@ -5637,6 +5663,21 @@
       toInput.value = "";
       fromInput.focus();
     });
+    nodeInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        addNode(nodeInput.value);
+        nodeInput.value = "";
+      }
+    });
+    [fromInput, toInput].forEach((input) => {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          addEdge(fromInput.value, toInput.value);
+          toInput.value = "";
+          fromInput.focus();
+        }
+      });
+    });
 
     labelToggle.addEventListener("change", () => {
       setShowLabels(labelToggle.checked);
@@ -5659,6 +5700,17 @@
     });
 
     generateGraphBtn.addEventListener("click", generateGraphFromDescription);
+    descriptionInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        generateGraphFromDescription();
+      }
+    });
+    saveGraphNameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveCurrentGraphToMemory();
+      }
+    });
     generateMatrixBtn.addEventListener("click", generateGraphFromAdjacencyMatrix);
     saveGraphBtn.addEventListener("click", saveCurrentGraphToMemory);
     savedGraphList.addEventListener("click", handleSavedGraphListClick);
@@ -5686,15 +5738,24 @@
     });
 
     dictionarySearch.addEventListener("input", renderDescriptionDictionary);
-    topToolDetails.forEach((details) => {
-      details.addEventListener("toggle", () => {
-        if (!details.open) {
-          return;
+    topToolButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const toolName = button.dataset.toolTab;
+        const willOpen = button.getAttribute("aria-expanded") !== "true";
+
+        for (const tab of topToolButtons) {
+          tab.setAttribute("aria-expanded", "false");
         }
 
-        for (const otherDetails of topToolDetails) {
-          if (otherDetails !== details) {
-            otherDetails.open = false;
+        for (const panel of topToolPanels) {
+          panel.classList.remove("is-open");
+        }
+
+        if (willOpen) {
+          button.setAttribute("aria-expanded", "true");
+          const panel = topToolPanels.find((item) => item.dataset.toolPanel === toolName);
+          if (panel) {
+            panel.classList.add("is-open");
           }
         }
       });
@@ -5709,13 +5770,6 @@
 
       descriptionInput.value = button.dataset.example;
       descriptionInput.focus();
-    });
-
-    sampleBtn.addEventListener("click", () => {
-      saveUndoState();
-      loadSampleGraph();
-      status.textContent = "Loaded a sample connected graph with a force-directed layout.";
-      updateView();
     });
 
     undoBtn.addEventListener("click", undoLastStep);
