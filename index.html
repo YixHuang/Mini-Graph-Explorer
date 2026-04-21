@@ -2981,6 +2981,105 @@
       return String(Math.round(value * 1000) / 1000);
     }
 
+    function isPerfectSquareInteger(value) {
+      const root = Math.round(Math.sqrt(value));
+      return root * root === value;
+    }
+
+    function reduceRadical(radicand) {
+      let coefficient = 1;
+      let remaining = radicand;
+
+      for (let factor = 2; factor * factor <= remaining; factor += 1) {
+        const square = factor * factor;
+
+        while (remaining % square === 0) {
+          coefficient *= factor;
+          remaining /= square;
+        }
+      }
+
+      return { coefficient, radicand: remaining };
+    }
+
+    function formatRadicalTerm(coefficient, radicand) {
+      if (radicand === 1) {
+        return String(coefficient);
+      }
+
+      return coefficient === 1 ? `√${radicand}` : `${coefficient}√${radicand}`;
+    }
+
+    function formatQuadraticSurd(constant, sign, radicand, denominator) {
+      const radical = reduceRadical(radicand);
+      let constantPart = constant;
+      let radicalCoefficient = sign * radical.coefficient;
+      let denominatorPart = denominator;
+      const commonDivisor = gcd(gcd(Math.abs(constantPart), Math.abs(radicalCoefficient)), denominatorPart);
+
+      if (commonDivisor > 1) {
+        constantPart /= commonDivisor;
+        radicalCoefficient /= commonDivisor;
+        denominatorPart /= commonDivisor;
+      }
+
+      if (radical.radicand === 1) {
+        return formatEigenvalue((constantPart + radicalCoefficient) / denominatorPart);
+      }
+
+      if (constantPart === 0) {
+        const signPrefix = radicalCoefficient < 0 ? "-" : "";
+        const radicalText = formatRadicalTerm(Math.abs(radicalCoefficient), radical.radicand);
+        return denominatorPart === 1
+          ? `${signPrefix}${radicalText}`
+          : `${signPrefix}${radicalText}/${denominatorPart}`;
+      }
+
+      const radicalText = formatRadicalTerm(Math.abs(radicalCoefficient), radical.radicand);
+      const operator = radicalCoefficient < 0 ? "-" : "+";
+      const numerator = `${constantPart} ${operator} ${radicalText}`;
+
+      return denominatorPart === 1 ? numerator : `(${numerator})/${denominatorPart}`;
+    }
+
+    function findQuadraticSurd(value) {
+      const tolerance = 2e-7;
+      let bestCandidate = null;
+
+      for (let denominator = 1; denominator <= 12; denominator += 1) {
+        for (let radicand = 2; radicand <= 100; radicand += 1) {
+          if (isPerfectSquareInteger(radicand)) {
+            continue;
+          }
+
+          const root = Math.sqrt(radicand);
+
+          for (const sign of [-1, 1]) {
+            const constant = Math.round(denominator * value - sign * root);
+            if (Math.abs(constant) > 24) {
+              continue;
+            }
+
+            const approximation = (constant + sign * root) / denominator;
+            const error = Math.abs(value - approximation);
+
+            if (error > tolerance) {
+              continue;
+            }
+
+            const label = formatQuadraticSurd(constant, sign, radicand, denominator);
+            const score = error * 10000000 + denominator * 0.2 + label.length * 0.03 + radicand * 0.001;
+
+            if (!bestCandidate || score < bestCandidate.score) {
+              bestCandidate = { label, score };
+            }
+          }
+        }
+      }
+
+      return bestCandidate ? bestCandidate.label : null;
+    }
+
     function formatEigenvalue(value) {
       if (Math.abs(value) < 1e-9) {
         return "0";
@@ -2989,6 +3088,11 @@
       const roundedInteger = Math.round(value);
       if (Math.abs(value - roundedInteger) < 1e-8) {
         return String(roundedInteger);
+      }
+
+      const quadraticSurd = findQuadraticSurd(value);
+      if (quadraticSurd) {
+        return quadraticSurd;
       }
 
       const rounded = Math.round(value * 1000000) / 1000000;
