@@ -154,6 +154,7 @@
         vertexCount: definition.vertexCount,
         edgePairs: (definition.edgePairs || []).map((edge) => ({ ...edge })),
         displayName,
+        labels: definition.labels ? definition.labels.slice() : null,
         positions: definition.positions ? definition.positions.map((position) => ({ ...position })) : null,
         layout: definition.layout || "standard",
         meta: JSON.parse(JSON.stringify(definition.meta || { type: "custom" }))
@@ -177,6 +178,8 @@
         "path",
         "complete",
         "empty",
+        "line",
+        "line graph",
         "petersen",
         "petersen graph",
         "multipartite"
@@ -196,7 +199,7 @@
 
       if (
         reservedWords.has(key) ||
-        /^(join of|cartesian product of|complement of|complement graph of)\b/.test(key) ||
+        /^(join of|cartesian product of|complement of|complement graph of|line graph of)\b/.test(key) ||
         /^(?:[cpqwk]\d+|\d+k\d+|k\d+(?:,\d+)+)$/.test(compactKey)
       ) {
         throw new Error("Use a custom name like G or H instead of a built-in notation such as C3 or K5.");
@@ -4031,6 +4034,11 @@
         description: "Complement graph on the same vertex set."
       },
       {
+        pattern: "line graph of G, line graph of K5, line graph of Petersen graph",
+        example: "line graph of K5",
+        description: "Line graph L(G): one vertex for each edge of G, with adjacent vertices for incident edges."
+      },
+      {
         pattern: "Saved graph names: G, H, myGraph",
         example: "join of G and C5",
         description: "Save the current graph, then reuse its name in joins, products, and complements."
@@ -4813,6 +4821,82 @@
       );
     }
 
+    function lineGraphVertexLabel(baseDefinition, baseEdge, index) {
+      const fromLabel = getDefinitionVertexLabel(baseDefinition, baseEdge.from);
+      const toLabel = getDefinitionVertexLabel(baseDefinition, baseEdge.to);
+
+      if (/^[A-Z]$/.test(fromLabel) && /^[A-Z]$/.test(toLabel)) {
+        return `${fromLabel}${toLabel}`;
+      }
+
+      const candidate = `${fromLabel}-${toLabel}`;
+      return candidate.length <= 5 ? candidate : `e${index + 1}`;
+    }
+
+    function lineGraphPositions(baseDefinition) {
+      const baseEdges = baseDefinition.edgePairs || [];
+
+      if (baseEdges.length === 0) {
+        return [];
+      }
+
+      const basePositions = fallbackPositions(baseDefinition);
+      const centerX = graphCanvas.width / 2;
+      const centerY = graphCanvas.height / 2;
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const spread = baseEdges.length <= 12 ? 1.45 : 1.25;
+      const jitter = baseEdges.length <= 20 ? 12 : 7;
+
+      return baseEdges.map((edge, index) => {
+        const from = basePositions[edge.from] || { x: centerX, y: centerY };
+        const to = basePositions[edge.to] || { x: centerX, y: centerY };
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
+        const angle = index * goldenAngle;
+        const radiusNudge = Math.hypot(midX - centerX, midY - centerY) < 8 ? jitter * 1.8 : jitter;
+        const x = centerX + (midX - centerX) * spread + Math.cos(angle) * radiusNudge;
+        const y = centerY + (midY - centerY) * spread + Math.sin(angle) * radiusNudge;
+
+        return {
+          x: Math.max(45, Math.min(graphCanvas.width - 45, x)),
+          y: Math.max(45, Math.min(graphCanvas.height - 45, y))
+        };
+      });
+    }
+
+    function lineGraphDefinition(baseDefinition) {
+      const baseEdges = baseDefinition.edgePairs || [];
+      const edgePairs = [];
+
+      for (let first = 0; first < baseEdges.length; first += 1) {
+        for (let second = first + 1; second < baseEdges.length; second += 1) {
+          const firstEdge = baseEdges[first];
+          const secondEdge = baseEdges[second];
+
+          if (
+            firstEdge.from === secondEdge.from ||
+            firstEdge.from === secondEdge.to ||
+            firstEdge.to === secondEdge.from ||
+            firstEdge.to === secondEdge.to
+          ) {
+            addUniqueEdge(edgePairs, first, second, "line");
+          }
+        }
+      }
+
+      const definition = makeDefinition(
+        baseEdges.length,
+        edgePairs,
+        `line graph of ${baseDefinition.displayName}`,
+        lineGraphPositions(baseDefinition),
+        "standard",
+        { type: "line", base: baseDefinition.meta || { type: "custom" }, baseEdgeCount: baseEdges.length }
+      );
+
+      definition.labels = baseEdges.map((edge, index) => lineGraphVertexLabel(baseDefinition, edge, index));
+      return definition;
+    }
+
     function splitAssociativeOperands(text) {
       return text
         .replace(/\s*,\s*(?:and\s+)?/g, " | ")
@@ -4855,6 +4939,7 @@
       const joinPrefix = "join of ";
       const productPrefix = "cartesian product of ";
       const complementPrefixes = ["complement graph of ", "complement of "];
+      const lineGraphPrefix = "line graph of ";
       const compactPhrase = phrase.replace(/\s+/g, "");
       let compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
 
@@ -4862,6 +4947,10 @@
         if (phrase.startsWith(prefix)) {
           return complementDefinition(parseGraphPhrase(phrase.slice(prefix.length)));
         }
+      }
+
+      if (phrase.startsWith(lineGraphPrefix)) {
+        return lineGraphDefinition(parseGraphPhrase(phrase.slice(lineGraphPrefix.length)));
       }
 
       const savedDefinition = getSavedGraphDefinition(phrase);
@@ -5073,7 +5162,7 @@
         return makeEmptyDefinition(parseVertexCount(match[1], 3));
       }
 
-      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, or Cartesian product of cycle on 4 vertices and path on 3 vertices.");
+      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, line graph of K5, or Cartesian product of cycle on 4 vertices and path on 3 vertices.");
     }
 
     function parseGraphDescription(text) {
@@ -5201,7 +5290,7 @@
       clearGraphData();
 
       for (let index = 0; index < definition.vertexCount; index += 1) {
-        const node = createNode(makeNodeLabel(index, definition.vertexCount));
+        const node = createNode(definition.labels && definition.labels[index] ? definition.labels[index] : makeNodeLabel(index, definition.vertexCount));
         const position = definition.positions && definition.positions[index];
 
         if (position) {
