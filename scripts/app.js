@@ -3308,25 +3308,25 @@
       const traceable = getTraceableResult();
       const treewidth = getTreewidthResult();
       const properties = [
-        ["Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No"],
-        ["Vertex connectivity &kappa;(G)", vertexConnectivity.text],
-        ["Edge connectivity &lambda;(G)", edgeConnectivity.text],
-        ["Toughness", toughness.text],
-        ["Hamiltonian?", hamiltonian.text],
-        ["Traceable?", traceable.text],
-        ["Planar?", planar.text],
-        ["Genus", genus.text],
-        ["Treewidth tw(G)", treewidth.text],
-        ["Independence number &alpha;(G)", independenceNumber.text],
-        ["Chromatic number &chi;(G)", chromaticNumber.text],
-        ["Chromatic index &chi;&prime;(G)", chromaticIndex.text],
-        ["Girth", girth.text],
-        ["Diameter", distances.diameter],
-        ["Radius", distances.radius]
+        ["Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No", "BFS from one vertex; Yes iff every vertex is reached."],
+        ["Vertex connectivity &kappa;(G)", vertexConnectivity.text, "Exact max-flow with vertex splitting; returns the smallest vertex cut."],
+        ["Edge connectivity &lambda;(G)", edgeConnectivity.text, "Exact unit-capacity max-flow from one vertex to all others."],
+        ["Toughness", toughness.text, "Minimizes |S| / components(G-S) for <=20 vertices; otherwise shows a bound."],
+        ["Hamiltonian?", hamiltonian.text, "Hamiltonian cycle: exact DP for <=20 vertices, then bounded DFS/special cases."],
+        ["Traceable?", traceable.text, "Hamiltonian path: special cases, then bounded DFS up to 30 vertices."],
+        ["Planar?", planar.text, "Known families, edge-count tests, reductions, then K5/K3,3 minor search for small cores."],
+        ["Genus", genus.text, "Exact formulas for known families; otherwise Euler lower bound plus planarity result."],
+        ["Treewidth tw(G)", treewidth.text, "Known exact cases; otherwise elimination lower/upper bounds and exact search up to 11 vertices."],
+        ["Independence number &alpha;(G)", independenceNumber.text, "Known exact cases; otherwise exhaustive subset search for <=20 vertices."],
+        ["Chromatic number &chi;(G)", chromaticNumber.text, "Known exact cases; otherwise backtracking color search, or a greedy upper bound."],
+        ["Chromatic index &chi;&prime;(G)", chromaticIndex.text, "Tests edge colorings with Delta and Delta+1; large non-bipartite graphs show a bound."],
+        ["Girth", girth.text, "BFS from every vertex; shortest detected cycle, or Infinity if acyclic."],
+        ["Diameter", distances.diameter, "BFS distances from every vertex; maximum eccentricity."],
+        ["Radius", distances.radius, "BFS distances from every vertex; minimum eccentricity."]
       ];
 
-      propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value]) => (
-        `<div class="property-card"><span>${name}</span><strong>${value}</strong></div>`
+      propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value, hint]) => (
+        `<div class="property-card"><span class="property-name">${name}<span class="parameter-help" tabindex="0" role="button" aria-label="${escapeHtml(hint)}" data-tooltip="${escapeHtml(hint)}">?</span></span><strong>${value}</strong></div>`
       )).join("")}</div>
       <div class="property-actions">
         <div class="minor-finder">

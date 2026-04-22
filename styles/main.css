@@ -466,11 +466,59 @@
       padding: 0.42rem 0.5rem;
     }
 
-    .property-card span {
+    .property-card .property-name {
       display: block;
       color: #4b5563;
       font-size: 0.78rem;
       line-height: 1.15;
+    }
+
+    .parameter-help {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+      margin-left: 0.28rem;
+      border-radius: 999px;
+      background: rgba(30, 111, 92, 0.12);
+      color: var(--accent);
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: help;
+      vertical-align: text-top;
+    }
+
+    .parameter-help::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 0.45rem);
+      z-index: 6;
+      width: max-content;
+      max-width: 240px;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid rgba(30, 111, 92, 0.18);
+      border-radius: 9px;
+      background: #1f2a37;
+      color: #fffaf2;
+      box-shadow: 0 8px 18px rgba(31, 42, 55, 0.16);
+      font-size: 0.76rem;
+      font-weight: 400;
+      line-height: 1.25;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 0.18rem);
+      transition: opacity 120ms ease, transform 120ms ease;
+      white-space: normal;
+    }
+
+    .parameter-help:hover::after,
+    .parameter-help:focus::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
     }
 
     .property-card strong {
