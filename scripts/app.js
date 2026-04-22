@@ -13,6 +13,7 @@
     const redoBtn = document.getElementById("redoBtn");
     const resetBtn = document.getElementById("resetBtn");
     const labelToggle = document.getElementById("labelToggle");
+    const derivedEdgeToggle = document.getElementById("derivedEdgeToggle");
     const sizeSlider = document.getElementById("sizeSlider");
     const sizeValue = document.getElementById("sizeValue");
     const nodeColorInput = document.getElementById("nodeColorInput");
@@ -44,6 +45,7 @@
     const savedGraphsKey = "miniGraphExplorer.savedGraphs";
     const savedGraphs = loadSavedGraphs();
     let showLabels = loadLabelPreference();
+    let showDerivedEdges = true;
     let currentGraphName = "Empty graph";
     let currentGraphMeta = { type: "empty", parts: [] };
     let nodeColor = "#1e6f5c";
@@ -183,6 +185,12 @@
         "line",
         "line graph",
         "power",
+        "distance",
+        "distance graph",
+        "subdivision",
+        "subdivision graph",
+        "total",
+        "total graph",
         "petersen",
         "petersen graph",
         "square",
@@ -665,6 +673,19 @@
       status.textContent = showLabels
         ? "Vertex labels are now visible."
         : "Vertex labels are now hidden.";
+      updateView();
+    }
+
+    function setShowDerivedEdges(value) {
+      if (showDerivedEdges === value) {
+        return;
+      }
+
+      showDerivedEdges = value;
+      derivedEdgeToggle.checked = showDerivedEdges;
+      status.textContent = showDerivedEdges
+        ? "Power-added edges are now visible."
+        : "Power-added edges are now hidden.";
       updateView();
     }
 
@@ -3662,6 +3683,10 @@
     }
 
     function drawEdge(edge) {
+      if (edge.kind === "power" && !showDerivedEdges) {
+        return;
+      }
+
       const fromNode = findNodeByLabel(edge.from);
       const toNode = findNodeByLabel(edge.to);
       const dx = toNode.x - fromNode.x;
@@ -3677,10 +3702,10 @@
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
-      ctx.strokeStyle = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power"
+      ctx.strokeStyle = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power" || edge.kind === "distance"
         ? hexToRgba(edgeColor, 0.42)
         : edgeColor;
-      ctx.lineWidth = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power" ? 1.5 : 3;
+      ctx.lineWidth = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power" || edge.kind === "distance" ? 1.5 : 3;
       ctx.lineCap = "round";
       ctx.stroke();
     }
@@ -4052,9 +4077,24 @@
         description: "Line graph L(G): one vertex for each edge of G; L^2(G) means apply the line graph twice."
       },
       {
-        pattern: "square of G, Power(G, 3), Power(3, G), 3rd power of G",
-        example: "Power(C5, 2)",
+        pattern: "G^2, square of G, Power(G, 3), Power(3, G), 3rd power of G",
+        example: "P5^2",
         description: "Graph power G^k: connect vertices whose distance in G is at most k."
+      },
+      {
+        pattern: "total graph of G, T(G)",
+        example: "total graph of C4",
+        description: "Total graph T(G): vertices and edges of G become vertices; adjacency means adjacent or incident in G."
+      },
+      {
+        pattern: "subdivision graph of G, S(G)",
+        example: "subdivision graph of C4",
+        description: "Subdivision graph: insert one new vertex into every edge of G."
+      },
+      {
+        pattern: "distance 2 graph of G, Distance(G, 2), Distance(2, G)",
+        example: "Distance(P5, 2)",
+        description: "Distance-k graph: connect vertices whose distance in G is exactly k."
       },
       {
         pattern: "Saved graph names: G, H, myGraph",
@@ -4895,15 +4935,7 @@
 
       for (let first = 0; first < baseEdges.length; first += 1) {
         for (let second = first + 1; second < baseEdges.length; second += 1) {
-          const firstEdge = baseEdges[first];
-          const secondEdge = baseEdges[second];
-
-          if (
-            firstEdge.from === secondEdge.from ||
-            firstEdge.from === secondEdge.to ||
-            firstEdge.to === secondEdge.from ||
-            firstEdge.to === secondEdge.to
-          ) {
+          if (areBaseEdgesIncident(baseEdges[first], baseEdges[second])) {
             addUniqueEdge(edgePairs, first, second, "line");
           }
         }
@@ -4923,7 +4955,188 @@
         }
       );
 
-      definition.labels = baseEdges.map((edge, index) => lineGraphVertexLabel(baseDefinition, edge, index));
+      const usedLabels = new Set();
+      definition.labels = baseEdges.map((edge, index) => (
+        uniqueGeneratedLabel(lineGraphVertexLabel(baseDefinition, edge, index), usedLabels, "e", index)
+      ));
+      return definition;
+    }
+
+    function areBaseEdgesIncident(firstEdge, secondEdge) {
+      return (
+        firstEdge.from === secondEdge.from ||
+        firstEdge.from === secondEdge.to ||
+        firstEdge.to === secondEdge.from ||
+        firstEdge.to === secondEdge.to
+      );
+    }
+
+    function derivedEdgeVertexLabel(baseDefinition, baseEdge, index) {
+      const fromLabel = getDefinitionVertexLabel(baseDefinition, baseEdge.from);
+      const toLabel = getDefinitionVertexLabel(baseDefinition, baseEdge.to);
+      const candidate = `e${fromLabel}${toLabel}`;
+
+      return candidate.length <= 6 ? candidate : `e${index + 1}`;
+    }
+
+    function uniqueGeneratedLabel(candidate, usedLabels, fallbackPrefix, index) {
+      let label = candidate && !usedLabels.has(candidate) ? candidate : `${fallbackPrefix}${index + 1}`;
+      let suffix = 2;
+
+      while (usedLabels.has(label)) {
+        label = `${fallbackPrefix}${index + 1}_${suffix}`;
+        suffix += 1;
+      }
+
+      usedLabels.add(label);
+      return label;
+    }
+
+    function baseVertexLabels(baseDefinition) {
+      return Array.from({ length: baseDefinition.vertexCount }, (_, index) => getDefinitionVertexLabel(baseDefinition, index));
+    }
+
+    function mixedGraphLabels(baseDefinition) {
+      const originalLabels = baseVertexLabels(baseDefinition);
+      const usedLabels = new Set(originalLabels);
+
+      return [
+        ...originalLabels,
+        ...(baseDefinition.edgePairs || []).map((edge, index) => (
+          uniqueGeneratedLabel(derivedEdgeVertexLabel(baseDefinition, edge, index), usedLabels, "e", index)
+        ))
+      ];
+    }
+
+    function mixedVertexPositions(baseDefinition) {
+      return [
+        ...fallbackPositions(baseDefinition),
+        ...lineGraphPositions(baseDefinition)
+      ];
+    }
+
+    function subdivisionGraphDefinition(baseDefinition) {
+      const baseEdges = baseDefinition.edgePairs || [];
+      const offset = baseDefinition.vertexCount;
+      const edgePairs = [];
+
+      baseEdges.forEach((edge, index) => {
+        const edgeVertex = offset + index;
+        addUniqueEdge(edgePairs, edge.from, edgeVertex, "subdivision");
+        addUniqueEdge(edgePairs, edgeVertex, edge.to, "subdivision");
+      });
+
+      const definition = makeDefinition(
+        baseDefinition.vertexCount + baseEdges.length,
+        edgePairs,
+        `subdivision graph of ${baseDefinition.displayName}`,
+        mixedVertexPositions(baseDefinition),
+        "standard",
+        {
+          type: "subdivision-graph",
+          base: baseDefinition.meta || { type: "custom" },
+          baseEdgeCount: baseEdges.length,
+          constructionHint: `Subdivision graph of ${baseDefinition.displayName}: insert one new vertex into every original edge.`
+        }
+      );
+
+      definition.labels = mixedGraphLabels(baseDefinition);
+      return definition;
+    }
+
+    function totalGraphDefinition(baseDefinition) {
+      const baseEdges = baseDefinition.edgePairs || [];
+      const offset = baseDefinition.vertexCount;
+      const edgePairs = [];
+
+      for (const edge of baseEdges) {
+        addUniqueEdge(edgePairs, edge.from, edge.to, "total-vertex");
+      }
+
+      baseEdges.forEach((edge, index) => {
+        const edgeVertex = offset + index;
+        addUniqueEdge(edgePairs, edge.from, edgeVertex, "total-incidence");
+        addUniqueEdge(edgePairs, edge.to, edgeVertex, "total-incidence");
+      });
+
+      for (let first = 0; first < baseEdges.length; first += 1) {
+        for (let second = first + 1; second < baseEdges.length; second += 1) {
+          if (areBaseEdgesIncident(baseEdges[first], baseEdges[second])) {
+            addUniqueEdge(edgePairs, offset + first, offset + second, "total-edge");
+          }
+        }
+      }
+
+      const definition = makeDefinition(
+        baseDefinition.vertexCount + baseEdges.length,
+        edgePairs,
+        `total graph of ${baseDefinition.displayName}`,
+        mixedVertexPositions(baseDefinition),
+        "standard",
+        {
+          type: "total",
+          base: baseDefinition.meta || { type: "custom" },
+          baseEdgeCount: baseEdges.length,
+          constructionHint: `Total graph of ${baseDefinition.displayName}: vertices and edges of the original graph both become vertices; adjacency records original adjacency, edge incidence, and vertex-edge incidence.`
+        }
+      );
+
+      definition.labels = mixedGraphLabels(baseDefinition);
+      return definition;
+    }
+
+    function distanceGraphDefinition(baseDefinition, distanceValue) {
+      if (!Number.isInteger(distanceValue) || distanceValue < 1) {
+        throw new Error("Distance graphs need a positive integer distance.");
+      }
+
+      const adjacencyList = definitionToAdjacencyList(baseDefinition);
+      const edgePairs = [];
+
+      for (let start = 0; start < baseDefinition.vertexCount; start += 1) {
+        const distances = Array(baseDefinition.vertexCount).fill(Infinity);
+        const queue = [start];
+        distances[start] = 0;
+
+        for (let head = 0; head < queue.length; head += 1) {
+          const current = queue[head];
+
+          if (distances[current] >= distanceValue) {
+            continue;
+          }
+
+          for (const next of adjacencyList[current] || []) {
+            if (distances[next] !== Infinity) {
+              continue;
+            }
+
+            distances[next] = distances[current] + 1;
+            queue.push(next);
+          }
+        }
+
+        for (let end = start + 1; end < baseDefinition.vertexCount; end += 1) {
+          if (distances[end] === distanceValue) {
+            addUniqueEdge(edgePairs, start, end, "distance");
+          }
+        }
+      }
+
+      const definition = makeDefinition(
+        baseDefinition.vertexCount,
+        edgePairs,
+        `distance ${distanceValue} graph of ${baseDefinition.displayName}`,
+        fallbackPositions(baseDefinition),
+        "standard",
+        {
+          type: "distance",
+          distance: distanceValue,
+          base: baseDefinition.meta || { type: "custom" },
+          constructionHint: `Distance ${distanceValue} graph of ${baseDefinition.displayName}: connect exactly those vertex pairs whose original distance is ${distanceValue}.`
+        }
+      );
+
+      definition.labels = Array.from({ length: baseDefinition.vertexCount }, (_, index) => getDefinitionVertexLabel(baseDefinition, index));
       return definition;
     }
 
@@ -5107,6 +5320,40 @@
       throw new Error("Power(...) needs one graph description and one positive integer, such as Power(G, 3) or Power(3, G).");
     }
 
+    function tryDistanceDefinition(graphText, distanceText) {
+      const distanceValue = parsePowerCount(distanceText);
+
+      if (!distanceValue) {
+        return null;
+      }
+
+      return distanceGraphDefinition(parseGraphPhrase(graphText), distanceValue);
+    }
+
+    function parseDistanceFunctionArguments(text) {
+      for (const [left, right] of splitTopLevelCommaCandidates(text)) {
+        try {
+          const leftGraph = tryDistanceDefinition(left, right);
+          if (leftGraph) {
+            return leftGraph;
+          }
+        } catch (error) {
+          // Try the other argument order before reporting a Distance(...) syntax error.
+        }
+
+        try {
+          const rightGraph = tryDistanceDefinition(right, left);
+          if (rightGraph) {
+            return rightGraph;
+          }
+        } catch (error) {
+          // Keep trying other top-level comma splits; K_{m,n} also contains a comma.
+        }
+      }
+
+      throw new Error("Distance(...) needs one graph description and one positive integer, such as Distance(G, 2) or Distance(2, G).");
+    }
+
     function iteratedLineGraphDefinition(baseDefinition, iterations) {
       if (!Number.isInteger(iterations) || iterations < 1) {
         throw new Error("Line graph iteration needs a positive integer, such as L^2(G).");
@@ -5159,19 +5406,28 @@
     }
 
     function parseGraphPhrase(phrase) {
+      phrase = phrase.trim();
       const joinPrefix = "join of ";
       const productPrefix = "cartesian product of ";
       const complementPrefixes = ["complement graph of ", "complement of "];
       const lineGraphPrefix = "line graph of ";
+      const totalGraphPrefix = "total graph of ";
+      const subdivisionGraphPrefix = "subdivision graph of ";
       const compactPhrase = phrase.replace(/\s+/g, "");
       let compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
       const complementFunctionMatch = phrase.match(/^comp(?:lement)?\s*\((.+)\)$/);
       const powerFunctionMatch = phrase.match(/^power\s*\((.+)\)$/);
+      const distanceFunctionMatch = phrase.match(/^distance\s*\((.+)\)$/);
+      const totalFunctionMatch = phrase.match(/^t\s*\((.+)\)$/);
+      const subdivisionFunctionMatch = phrase.match(/^s\s*\((.+)\)$/);
       const squareMatch = phrase.match(/^square of (.+)$/);
       const cubeMatch = phrase.match(/^cube of (.+)$/);
       const powerPhraseMatch = phrase.match(/^(.+) power of (.+)$/);
+      const distancePhraseMatch = phrase.match(/^distance\s+([a-z0-9]+)\s+graph of (.+)$/);
+      const distanceAtPhraseMatch = phrase.match(/^distance graph of (.+) at ([a-z0-9]+)$/);
       const lineNotationMatch = phrase.match(/^l(?:\^([a-z0-9]+))?\s*\((.+)\)$/);
       const complementSuffixMatch = phrase.match(/^(.+)\^c$/);
+      const powerSuffixMatch = phrase.match(/^(.+)\^(\d+)$/);
 
       for (const prefix of complementPrefixes) {
         if (phrase.startsWith(prefix)) {
@@ -5185,6 +5441,18 @@
 
       if (powerFunctionMatch) {
         return parsePowerFunctionArguments(powerFunctionMatch[1]);
+      }
+
+      if (distanceFunctionMatch) {
+        return parseDistanceFunctionArguments(distanceFunctionMatch[1]);
+      }
+
+      if (totalFunctionMatch) {
+        return totalGraphDefinition(parseGraphPhrase(totalFunctionMatch[1]));
+      }
+
+      if (subdivisionFunctionMatch) {
+        return subdivisionGraphDefinition(parseGraphPhrase(subdivisionFunctionMatch[1]));
       }
 
       if (squareMatch) {
@@ -5203,6 +5471,22 @@
         }
       }
 
+      if (distancePhraseMatch) {
+        const distanceValue = parsePowerCount(distancePhraseMatch[1]);
+
+        if (distanceValue) {
+          return distanceGraphDefinition(parseGraphPhrase(distancePhraseMatch[2]), distanceValue);
+        }
+      }
+
+      if (distanceAtPhraseMatch) {
+        const distanceValue = parsePowerCount(distanceAtPhraseMatch[2]);
+
+        if (distanceValue) {
+          return distanceGraphDefinition(parseGraphPhrase(distanceAtPhraseMatch[1]), distanceValue);
+        }
+      }
+
       if (lineNotationMatch) {
         return iteratedLineGraphDefinition(parseGraphPhrase(lineNotationMatch[2]), parsePowerCount(lineNotationMatch[1] || "1"));
       }
@@ -5211,8 +5495,20 @@
         return lineGraphDefinition(parseGraphPhrase(phrase.slice(lineGraphPrefix.length)));
       }
 
+      if (phrase.startsWith(totalGraphPrefix)) {
+        return totalGraphDefinition(parseGraphPhrase(phrase.slice(totalGraphPrefix.length)));
+      }
+
+      if (phrase.startsWith(subdivisionGraphPrefix)) {
+        return subdivisionGraphDefinition(parseGraphPhrase(phrase.slice(subdivisionGraphPrefix.length)));
+      }
+
       if (complementSuffixMatch) {
         return complementDefinition(parseGraphPhrase(complementSuffixMatch[1]));
+      }
+
+      if (powerSuffixMatch) {
+        return graphPowerDefinition(parseGraphPhrase(powerSuffixMatch[1]), parsePowerCount(powerSuffixMatch[2]));
       }
 
       const savedDefinition = getSavedGraphDefinition(phrase);
@@ -5765,7 +6061,7 @@
         edgeCount: edges.length,
         constructionHint: getConstructionHint(),
         vertices: nodes.map((node) => node.label),
-        edges: edges.map((edge) => ({ from: edge.from, to: edge.to })),
+        edges: edges.map((edge) => ({ from: edge.from, to: edge.to, kind: edge.kind || "normal" })),
         parameters: getParameterValuesForTest()
       };
     }
@@ -5782,6 +6078,8 @@
         name: definition.displayName,
         vertexCount: definition.vertexCount,
         edgeCount: (definition.edgePairs || []).length,
+        powerEdgeCount: (definition.edgePairs || []).filter((edge) => edge.kind === "power").length,
+        distanceEdgeCount: (definition.edgePairs || []).filter((edge) => edge.kind === "distance").length,
         constructionHint: definition.meta && definition.meta.constructionHint ? definition.meta.constructionHint : ""
       };
     }
@@ -5902,6 +6200,10 @@
       setShowLabels(labelToggle.checked);
     });
 
+    derivedEdgeToggle.addEventListener("change", () => {
+      setShowDerivedEdges(derivedEdgeToggle.checked);
+    });
+
     sizeSlider.addEventListener("change", () => {
       setNodeRadius(sizeSlider.value);
     });
@@ -6020,6 +6322,7 @@
     graphCanvas.addEventListener("pointercancel", stopDragging);
 
     labelToggle.checked = showLabels;
+    derivedEdgeToggle.checked = showDerivedEdges;
     renderDescriptionDictionary();
     renderSavedGraphs();
     updateSizeOutput();

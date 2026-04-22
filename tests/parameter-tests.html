@@ -519,7 +519,18 @@
         expected: {
           name: "square of P_5",
           vertexCount: "5",
-          edgeCount: "7"
+          edgeCount: "7",
+          powerEdgeCount: "3"
+        }
+      },
+      {
+        name: "Graph power suffix parser",
+        description: "P5^2",
+        expected: {
+          name: "square of P_5",
+          vertexCount: "5",
+          edgeCount: "7",
+          powerEdgeCount: "3"
         }
       },
       {
@@ -547,6 +558,72 @@
           name: "3rd power of P_4",
           vertexCount: "4",
           edgeCount: "6"
+        }
+      },
+      {
+        name: "Total graph parser",
+        description: "total graph of P3",
+        expected: {
+          name: "total graph of P_3",
+          vertexCount: "5",
+          edgeCount: "7"
+        }
+      },
+      {
+        name: "Total graph shorthand parser",
+        description: "T(P3)",
+        expected: {
+          name: "total graph of P_3",
+          vertexCount: "5",
+          edgeCount: "7"
+        }
+      },
+      {
+        name: "Subdivision graph parser",
+        description: "subdivision graph of C4",
+        expected: {
+          name: "subdivision graph of C_4",
+          vertexCount: "8",
+          edgeCount: "8"
+        }
+      },
+      {
+        name: "Subdivision graph shorthand parser",
+        description: "S(P3)",
+        expected: {
+          name: "subdivision graph of P_3",
+          vertexCount: "5",
+          edgeCount: "4"
+        }
+      },
+      {
+        name: "Distance graph parser",
+        description: "Distance(P5, 2)",
+        expected: {
+          name: "distance 2 graph of P_5",
+          vertexCount: "5",
+          edgeCount: "3",
+          distanceEdgeCount: "3"
+        }
+      },
+      {
+        name: "Distance graph exponent-first parser",
+        description: "Distance(2, P5)",
+        expected: {
+          name: "distance 2 graph of P_5",
+          vertexCount: "5",
+          edgeCount: "3",
+          distanceEdgeCount: "3"
+        }
+      },
+      {
+        name: "Distance graph natural parser",
+        description: "distance 3 graph of P4",
+        expected: {
+          name: "distance 3 graph of P_4",
+          vertexCount: "4",
+          edgeCount: "1",
+          distanceEdgeCount: "1"
         }
       },
       {

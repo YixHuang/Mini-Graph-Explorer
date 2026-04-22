@@ -22,7 +22,7 @@
         <div>
           <label for="descriptionInput">Describe a graph</label>
           <div class="description-row">
-            <textarea id="descriptionInput" rows="2" placeholder="Examples: C3, K5, L^2(P4), square of C5, Power(P5, 2)"></textarea>
+            <textarea id="descriptionInput" rows="2" placeholder="Examples: C3, P5^2, total graph of C4, Distance(P5, 2)"></textarea>
             <button id="generateGraphBtn">Generate</button>
           </div>
         </div>
@@ -63,7 +63,7 @@
         </section>
 
         <section id="dictionaryToolPanel" class="tool-panel dictionary compact-details" data-tool-panel="dictionary">
-          <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, Petersen, line graph, power, complement...">
+          <input id="dictionarySearch" class="dictionary-search" type="search" placeholder="Search: cycle, line graph, power, total, distance...">
           <div id="dictionaryList" class="dictionary-list"></div>
         </section>
       </div>
@@ -131,6 +131,10 @@
             <div class="toggle-row view-label-toggle">
               <input id="labelToggle" type="checkbox" checked>
               <label for="labelToggle">Show vertex labels</label>
+            </div>
+            <div class="toggle-row view-label-toggle">
+              <input id="derivedEdgeToggle" type="checkbox" checked>
+              <label for="derivedEdgeToggle">Show power edges</label>
             </div>
           </div>
         </div>
