@@ -682,6 +682,42 @@
       }
     ];
 
+    const editCases = [
+      {
+        name: "Contract edge rewires neighbors",
+        setup: "P4",
+        run: (api) => api.contractEdge("B", "C"),
+        expected: {
+          vertexCount: "3",
+          edgeCount: "2",
+          vertices: "A,B,D",
+          edges: "A-B,B-D"
+        }
+      },
+      {
+        name: "Batch merge pairs accepts quoted lists",
+        setup: "C4",
+        run: (api) => api.mergeVertices('"A,B"', '"C,D"'),
+        expected: {
+          vertexCount: "2",
+          edgeCount: "1",
+          vertices: "A,B",
+          edges: "A-B"
+        }
+      },
+      {
+        name: "Merge nonadjacent vertices removes duplicate edges",
+        setup: "P3",
+        run: (api) => api.mergeVertices("A", "C"),
+        expected: {
+          vertexCount: "2",
+          edgeCount: "1",
+          vertices: "A,B",
+          edges: "A-B"
+        }
+      }
+    ];
+
     const matrixErrorCases = [
       {
         name: "Nonsquare matrix rejection",
@@ -778,6 +814,20 @@
       return { passed, total };
     }
 
+    function summarizeEditSnapshot(snapshot) {
+      const edges = snapshot.edges
+        .map((edge) => [edge.from, edge.to].sort().join("-"))
+        .sort()
+        .join(",");
+
+      return {
+        vertexCount: String(snapshot.vertexCount),
+        edgeCount: String(snapshot.edgeCount),
+        vertices: snapshot.vertices.slice().sort().join(","),
+        edges
+      };
+    }
+
     async function runTests() {
       const api = await waitForApi();
       let passed = 0;
@@ -800,6 +850,14 @@
       for (const testCase of parserCases) {
         const parsed = api.parseGraph(testCase.description);
         const result = checkObject(testCase.name, parsed, testCase.expected);
+        passed += result.passed;
+        total += result.total;
+      }
+
+      for (const testCase of editCases) {
+        api.loadGraph(testCase.setup);
+        const snapshot = testCase.run(api);
+        const result = checkObject(testCase.name, summarizeEditSnapshot(snapshot), testCase.expected);
         passed += result.passed;
         total += result.total;
       }

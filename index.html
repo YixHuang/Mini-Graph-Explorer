@@ -93,6 +93,17 @@
           <button id="addEdgeBtn">Add</button>
           <button id="deleteEdgeBtn" class="secondary">Delete</button>
         </div>
+        <div>
+          <label>Contract / merge vertices</label>
+          <div class="control-grid">
+            <input id="mergeLeftInput" type="text" placeholder="A or A,B,C" aria-label="First vertices to merge">
+            <input id="mergeRightInput" type="text" placeholder="B or D,E,F" aria-label="Second vertices to merge">
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="contractEdgeBtn" type="button">Contract edge</button>
+          <button id="mergeVerticesBtn" type="button" class="secondary">Merge pairs</button>
+        </div>
         <div class="button-row">
           <button id="undoBtn" class="secondary">Undo</button>
           <button id="redoBtn" class="secondary">Redo</button>

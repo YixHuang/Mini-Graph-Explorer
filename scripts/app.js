@@ -9,6 +9,10 @@
     const deleteNodeBtn = document.getElementById("deleteNodeBtn");
     const addEdgeBtn = document.getElementById("addEdgeBtn");
     const deleteEdgeBtn = document.getElementById("deleteEdgeBtn");
+    const mergeLeftInput = document.getElementById("mergeLeftInput");
+    const mergeRightInput = document.getElementById("mergeRightInput");
+    const contractEdgeBtn = document.getElementById("contractEdgeBtn");
+    const mergeVerticesBtn = document.getElementById("mergeVerticesBtn");
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
     const resetBtn = document.getElementById("resetBtn");
@@ -659,6 +663,132 @@
       resetMinorResultForGraphChange();
       status.textContent = `Deleted edge "${start}-${end}".`;
       updateView();
+    }
+
+    function stripWrappingQuotes(value) {
+      const cleanValue = value.trim();
+
+      if (
+        (cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
+        (cleanValue.startsWith("'") && cleanValue.endsWith("'"))
+      ) {
+        return cleanValue.slice(1, -1).trim();
+      }
+
+      return cleanValue;
+    }
+
+    function parseVertexMergeList(value) {
+      const cleanValue = stripWrappingQuotes(value);
+
+      return cleanValue
+        .split(",")
+        .map((part) => normalizeName(stripWrappingQuotes(part)))
+        .filter(Boolean);
+    }
+
+    function getValidatedMergePairs(leftValue, rightValue, requireEdges = false) {
+      const leftLabels = parseVertexMergeList(leftValue);
+      const rightLabels = parseVertexMergeList(rightValue);
+
+      if (leftLabels.length === 0 || rightLabels.length === 0) {
+        throw new Error("Type one vertex on each side, or two comma-separated lists such as A,B,C and D,E,F.");
+      }
+
+      if (leftLabels.length !== rightLabels.length) {
+        throw new Error("Merge lists must have the same length so vertices can be paired positionally.");
+      }
+
+      const allLabels = [...leftLabels, ...rightLabels];
+      if (new Set(allLabels).size !== allLabels.length) {
+        throw new Error("Each merge batch should mention every vertex at most once.");
+      }
+
+      const pairs = leftLabels.map((keep, index) => ({ keep, absorb: rightLabels[index] }));
+
+      for (const pair of pairs) {
+        if (pair.keep === pair.absorb) {
+          throw new Error(`Use two different vertices for the pair "${pair.keep}".`);
+        }
+
+        if (!findNodeByLabel(pair.keep)) {
+          throw new Error(`Vertex "${pair.keep}" does not exist.`);
+        }
+
+        if (!findNodeByLabel(pair.absorb)) {
+          throw new Error(`Vertex "${pair.absorb}" does not exist.`);
+        }
+
+        if (requireEdges && !edges.some((edge) => edge.key === makeEdgeKey(pair.keep, pair.absorb))) {
+          throw new Error(`Edge "${pair.keep}-${pair.absorb}" does not exist, so it cannot be contracted.`);
+        }
+      }
+
+      return pairs;
+    }
+
+    function applyValidatedMergePairs(pairs, actionName) {
+      const absorbedToKeep = new Map(pairs.map((pair) => [pair.absorb, pair.keep]));
+
+      for (const pair of pairs) {
+        const keepNode = findNodeByLabel(pair.keep);
+        const absorbNode = findNodeByLabel(pair.absorb);
+
+        keepNode.x = (keepNode.x + absorbNode.x) / 2;
+        keepNode.y = (keepNode.y + absorbNode.y) / 2;
+        keepNode.vx = (keepNode.vx + absorbNode.vx) / 2;
+        keepNode.vy = (keepNode.vy + absorbNode.vy) / 2;
+        keepNode.fixed = keepNode.fixed || absorbNode.fixed;
+      }
+
+      const nextEdges = [];
+      const seenKeys = new Set();
+
+      for (const edge of edges) {
+        const from = absorbedToKeep.get(edge.from) || edge.from;
+        const to = absorbedToKeep.get(edge.to) || edge.to;
+
+        if (from === to) {
+          continue;
+        }
+
+        const key = makeEdgeKey(from, to);
+        if (seenKeys.has(key)) {
+          continue;
+        }
+
+        seenKeys.add(key);
+        nextEdges.push({ ...edge, from, to, key });
+      }
+
+      for (let index = nodes.length - 1; index >= 0; index -= 1) {
+        if (absorbedToKeep.has(nodes[index].label)) {
+          nodes.splice(index, 1);
+        }
+      }
+
+      edges.length = 0;
+      edges.push(...nextEdges);
+      currentGraphName = "Custom graph";
+      currentGraphMeta = { type: "custom" };
+      resetMinorResultForGraphChange();
+      status.textContent = `${actionName}: ${pairs.map((pair) => `${pair.keep}\u2190${pair.absorb}`).join(", ")}.`;
+      updateView();
+    }
+
+    function mergeVertexPairs(leftValue, rightValue, options = {}) {
+      let pairs;
+
+      try {
+        pairs = getValidatedMergePairs(leftValue, rightValue, Boolean(options.requireEdges));
+      } catch (error) {
+        status.textContent = error.message;
+        return false;
+      }
+
+      saveUndoState();
+      applyValidatedMergePairs(pairs, options.actionName || "Merged vertices");
+      return true;
     }
 
     function setShowLabels(value) {
@@ -6134,8 +6264,19 @@
       return getGraphSnapshotForTest();
     }
 
+    function contractEdgeForTest(leftValue, rightValue) {
+      mergeVertexPairs(leftValue, rightValue, { requireEdges: true, actionName: "Contracted edge" });
+      return getGraphSnapshotForTest();
+    }
+
+    function mergeVerticesForTest(leftValue, rightValue) {
+      mergeVertexPairs(leftValue, rightValue);
+      return getGraphSnapshotForTest();
+    }
+
     window.MiniGraphExplorerTestAPI = {
       clearGraph: clearGraphForTest,
+      contractEdge: contractEdgeForTest,
       findContainment: findContainmentForTest,
       findMinor: findMinorForTest,
       getGraphSnapshot: getGraphSnapshotForTest,
@@ -6143,6 +6284,7 @@
       getParameters: getParameterValuesForTest,
       loadGraph: loadGraphForTest,
       loadMatrix: loadMatrixForTest,
+      mergeVertices: mergeVerticesForTest,
       parseGraph: parseGraphForTest,
       parseMatrix: parseMatrixForTest,
       spectrum: getSpectrumForTest
@@ -6180,6 +6322,19 @@
       toInput.value = "";
       fromInput.focus();
     });
+
+    contractEdgeBtn.addEventListener("click", () => {
+      mergeVertexPairs(mergeLeftInput.value, mergeRightInput.value, { requireEdges: true, actionName: "Contracted edge" });
+      mergeRightInput.value = "";
+      mergeLeftInput.focus();
+    });
+
+    mergeVerticesBtn.addEventListener("click", () => {
+      mergeVertexPairs(mergeLeftInput.value, mergeRightInput.value);
+      mergeRightInput.value = "";
+      mergeLeftInput.focus();
+    });
+
     nodeInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         addNode(nodeInput.value);
@@ -6192,6 +6347,15 @@
           addEdge(fromInput.value, toInput.value);
           toInput.value = "";
           fromInput.focus();
+        }
+      });
+    });
+    [mergeLeftInput, mergeRightInput].forEach((input) => {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          mergeVertexPairs(mergeLeftInput.value, mergeRightInput.value);
+          mergeRightInput.value = "";
+          mergeLeftInput.focus();
         }
       });
     });
