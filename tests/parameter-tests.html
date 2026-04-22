@@ -661,6 +661,15 @@
             passed += 1;
           }
         }
+
+        total += 1;
+        const expectedHighlight = testCase.expected === "Yes" ? "minor:highlighted" : "none";
+        const actualHighlight = result.highlight && result.highlight.groupCount > 0 && result.highlight.segmentCount > 0
+          ? `${result.highlight.mode}:highlighted`
+          : "none";
+        if (addRow(testCase.name, "minor highlight", expectedHighlight, actualHighlight)) {
+          passed += 1;
+        }
       }
 
       for (const testCase of containmentCases) {
@@ -676,6 +685,15 @@
           if (addRow(testCase.name, `${testCase.mode} witness`, testCase.witnessIncludes, hasWitnessText)) {
             passed += 1;
           }
+        }
+
+        total += 1;
+        const expectedHighlight = testCase.expected === "Yes" ? `${testCase.mode}:highlighted` : "none";
+        const actualHighlight = result.highlight && result.highlight.groupCount > 0 && result.highlight.segmentCount > 0
+          ? `${result.highlight.mode}:highlighted`
+          : "none";
+        if (addRow(testCase.name, `${testCase.mode} highlight`, expectedHighlight, actualHighlight)) {
+          passed += 1;
         }
       }
 

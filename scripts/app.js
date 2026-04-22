@@ -52,6 +52,20 @@
     let containmentMode = "minor";
     let minorResultText = "";
     let spectrumResultText = "";
+    let containmentHighlight = null;
+
+    const containmentPalette = [
+      "#2563eb",
+      "#dc2626",
+      "#059669",
+      "#9333ea",
+      "#d97706",
+      "#0891b2",
+      "#be185d",
+      "#4f46e5",
+      "#65a30d",
+      "#b45309"
+    ];
 
     const physics = {
       repulsion: 9000,
@@ -80,6 +94,7 @@
     function resetMinorResultForGraphChange() {
       minorResultText = "";
       spectrumResultText = "";
+      containmentHighlight = null;
     }
 
     function randomInRange(min, max) {
@@ -2346,12 +2361,168 @@
       return "";
     }
 
+    function getHighlightColor(index) {
+      return containmentPalette[index % containmentPalette.length];
+    }
+
+    function makeHighlightSegment(hostDefinition, fromIndex, toIndex, color, role = "edge", width = 8) {
+      return {
+        from: getDefinitionVertexLabel(hostDefinition, fromIndex),
+        to: getDefinitionVertexLabel(hostDefinition, toIndex),
+        color,
+        role,
+        width
+      };
+    }
+
+    function getBranchSetInternalTreeSegments(hostDefinition, hostIndices, color) {
+      if (hostIndices.length <= 1) {
+        return [];
+      }
+
+      const hostSet = new Set(hostIndices);
+      const adjacencyList = definitionToAdjacencyList(hostDefinition);
+      const visited = new Set([hostIndices[0]]);
+      const queue = [hostIndices[0]];
+      const segments = [];
+
+      for (let head = 0; head < queue.length; head += 1) {
+        const current = queue[head];
+
+        for (const next of adjacencyList[current] || []) {
+          if (!hostSet.has(next) || visited.has(next)) {
+            continue;
+          }
+
+          visited.add(next);
+          queue.push(next);
+          segments.push(makeHighlightSegment(hostDefinition, current, next, color, "branch-set", 7));
+        }
+      }
+
+      return segments;
+    }
+
+    function buildMappedVertexHighlight(mode, result, hostDefinition, targetDefinition) {
+      const color = mode === "induced-subgraph" ? "#0891b2" : "#2563eb";
+      const groups = result.witness.mapping.map((hostIndex, targetIndex) => ({
+        targetLabel: getDefinitionVertexLabel(targetDefinition, targetIndex),
+        hostLabels: [getDefinitionVertexLabel(hostDefinition, hostIndex)],
+        color,
+        role: mode === "induced-subgraph" ? "induced" : "subgraph"
+      }));
+      const segments = getDefinitionEdgePairs(targetDefinition).map((edge) => (
+        makeHighlightSegment(hostDefinition, result.witness.mapping[edge.from], result.witness.mapping[edge.to], color, "edge", 8)
+      ));
+
+      return { groups, segments };
+    }
+
+    function buildSubdivisionHighlight(result, hostDefinition, targetDefinition) {
+      const groups = result.witness.branchMapping.map((hostIndex, targetIndex) => ({
+        targetLabel: getDefinitionVertexLabel(targetDefinition, targetIndex),
+        hostLabels: [getDefinitionVertexLabel(hostDefinition, hostIndex)],
+        color: getHighlightColor(targetIndex),
+        role: "branch"
+      }));
+      const branchVertices = new Set(result.witness.branchMapping);
+      const internalVertices = new Set();
+      const segments = [];
+
+      result.witness.paths.forEach((path, pathIndex) => {
+        const color = getHighlightColor(pathIndex);
+        for (let index = 0; index < path.hostPath.length - 1; index += 1) {
+          segments.push(makeHighlightSegment(hostDefinition, path.hostPath[index], path.hostPath[index + 1], color, "path", 8));
+        }
+
+        for (const hostIndex of path.hostPath.slice(1, -1)) {
+          if (!branchVertices.has(hostIndex)) {
+            internalVertices.add(hostIndex);
+          }
+        }
+      });
+
+      if (internalVertices.size > 0) {
+        groups.push({
+          targetLabel: "",
+          hostLabels: [...internalVertices].map((hostIndex) => getDefinitionVertexLabel(hostDefinition, hostIndex)),
+          color: "#f59e0b",
+          role: "path-internal"
+        });
+      }
+
+      return { groups, segments };
+    }
+
+    function buildMinorBranchSetHighlight(result, hostDefinition, targetDefinition) {
+      const groups = result.witness.branchSets.map((hostIndices, targetIndex) => ({
+        targetLabel: getDefinitionVertexLabel(targetDefinition, targetIndex),
+        hostLabels: hostIndices.map((hostIndex) => getDefinitionVertexLabel(hostDefinition, hostIndex)),
+        color: getHighlightColor(targetIndex),
+        role: "branch-set"
+      }));
+      const segments = [];
+
+      result.witness.branchSets.forEach((hostIndices, targetIndex) => {
+        segments.push(...getBranchSetInternalTreeSegments(hostDefinition, hostIndices, getHighlightColor(targetIndex)));
+      });
+
+      for (const edge of getBranchSetEdgeWitnesses(hostDefinition, targetDefinition, result.witness.branchSets)) {
+        if (edge.hostFrom !== null && edge.hostTo !== null) {
+          segments.push(makeHighlightSegment(hostDefinition, edge.hostFrom, edge.hostTo, "#111827", "minor-witness", 9));
+        }
+      }
+
+      return { groups, segments };
+    }
+
+    function buildContainmentHighlight(mode, result, hostDefinition, targetDefinition) {
+      if (result.text !== "Yes" || !result.witness || result.witness.type === "trivial") {
+        return null;
+      }
+
+      let visual;
+
+      if (result.witness.type === "subgraph" || result.witness.type === "induced-subgraph") {
+        visual = buildMappedVertexHighlight(result.witness.type, result, hostDefinition, targetDefinition);
+      } else if (result.witness.type === "subdivision") {
+        visual = buildSubdivisionHighlight(result, hostDefinition, targetDefinition);
+      } else if (result.witness.type === "branch-sets") {
+        visual = buildMinorBranchSetHighlight(result, hostDefinition, targetDefinition);
+      } else {
+        return null;
+      }
+
+      return {
+        mode,
+        modeLabel: getContainmentModeLabel(mode),
+        targetName: targetDefinition.displayName,
+        groups: visual.groups,
+        segments: visual.segments
+      };
+    }
+
+    function summarizeContainmentHighlight(highlight = containmentHighlight) {
+      if (!highlight) {
+        return null;
+      }
+
+      return {
+        mode: highlight.mode,
+        targetName: highlight.targetName,
+        groupCount: highlight.groups.length,
+        segmentCount: highlight.segments.length,
+        highlightedVertices: [...new Set(highlight.groups.flatMap((group) => group.hostLabels))].length
+      };
+    }
+
     function runFindMinor() {
       minorQuery = minorQuery.trim();
       const modeLabel = getContainmentModeLabel(containmentMode);
 
       if (!minorQuery) {
         minorResultText = "Enter a target graph first, such as K5, C3, Petersen graph, or a saved graph name.";
+        containmentHighlight = null;
         updateView();
         return;
       }
@@ -2362,6 +2533,7 @@
         targetDefinition = parseGraphDescription(minorQuery);
       } catch (error) {
         minorResultText = error.message;
+        containmentHighlight = null;
         updateView();
         return;
       }
@@ -2369,6 +2541,7 @@
       const hostDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
       const result = getContainmentResult(containmentMode, hostDefinition, targetDefinition);
       minorResultText = `${targetDefinition.displayName} ${modeLabel}? ${result.text}.${formatMinorWitness(result, hostDefinition, targetDefinition)}`;
+      containmentHighlight = buildContainmentHighlight(containmentMode, result, hostDefinition, targetDefinition);
       updateView();
     }
 
@@ -3521,6 +3694,105 @@
       }
     }
 
+    function getContainmentHighlightNodeMap() {
+      return new Map(nodes.map((node) => [node.label, node]));
+    }
+
+    function drawContainmentHighlightUnderlay(nodeMap) {
+      if (!containmentHighlight) {
+        return;
+      }
+
+      for (const group of containmentHighlight.groups) {
+        for (const label of group.hostLabels) {
+          const node = nodeMap.get(label);
+          if (!node) {
+            continue;
+          }
+
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, physics.nodeRadius + 8, 0, Math.PI * 2);
+          ctx.fillStyle = hexToRgba(group.color, group.role === "path-internal" ? 0.14 : 0.18);
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawContainmentHighlightSegments(nodeMap) {
+      if (!containmentHighlight) {
+        return;
+      }
+
+      for (const segment of containmentHighlight.segments) {
+        const fromNode = nodeMap.get(segment.from);
+        const toNode = nodeMap.get(segment.to);
+
+        if (!fromNode || !toNode) {
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(fromNode.x, fromNode.y);
+        ctx.lineTo(toNode.x, toNode.y);
+        ctx.strokeStyle = hexToRgba(segment.color, segment.role === "branch-set" ? 0.55 : 0.78);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(fromNode.x, fromNode.y);
+        ctx.lineTo(toNode.x, toNode.y);
+        ctx.strokeStyle = "#fffaf2";
+        ctx.lineWidth = Math.max(2, segment.width - 4);
+        ctx.lineCap = "round";
+        ctx.globalAlpha = segment.role === "minor-witness" ? 0.58 : 0.38;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function drawContainmentHighlightRingsAndLabels(nodeMap) {
+      if (!containmentHighlight) {
+        return;
+      }
+
+      for (const group of containmentHighlight.groups) {
+        const groupNodes = group.hostLabels
+          .map((label) => nodeMap.get(label))
+          .filter(Boolean);
+
+        for (const node of groupNodes) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, physics.nodeRadius + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = group.color;
+          ctx.lineWidth = group.role === "path-internal" ? 2 : 3;
+          ctx.stroke();
+        }
+
+        if (!group.targetLabel || groupNodes.length === 0) {
+          continue;
+        }
+
+        const centerX = groupNodes.reduce((sum, node) => sum + node.x, 0) / groupNodes.length;
+        const centerY = groupNodes.reduce((sum, node) => sum + node.y, 0) / groupNodes.length;
+        const labelText = group.targetLabel;
+        ctx.font = "700 11px Georgia";
+        const labelWidth = Math.max(22, ctx.measureText(labelText).width + 12);
+        const labelHeight = 18;
+        const labelX = Math.max(6, Math.min(graphCanvas.width - labelWidth - 6, centerX - labelWidth / 2));
+        const labelY = Math.max(6, centerY - physics.nodeRadius - 24);
+
+        ctx.fillStyle = hexToRgba(group.color, 0.92);
+        ctx.beginPath();
+        ctx.roundRect(labelX, labelY, labelWidth, labelHeight, 8);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(labelText, labelX + labelWidth / 2, labelY + labelHeight / 2 + 0.5);
+      }
+    }
+
     function renderGraph() {
       ctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
 
@@ -3529,13 +3801,20 @@
         return;
       }
 
+      const highlightNodeMap = getContainmentHighlightNodeMap();
+      drawContainmentHighlightUnderlay(highlightNodeMap);
+
       for (const edge of edges) {
         drawEdge(edge);
       }
 
+      drawContainmentHighlightSegments(highlightNodeMap);
+
       for (const node of nodes) {
         drawNode(node);
       }
+
+      drawContainmentHighlightRingsAndLabels(highlightNodeMap);
     }
 
     function getPropertyRows() {
@@ -5183,12 +5462,14 @@
 
       const hostSnapshot = makePlainDefinitionFromCurrentGraph(hostDefinition.displayName);
       const result = getContainmentResult(mode, hostSnapshot, targetDefinition);
+      containmentHighlight = buildContainmentHighlight(mode, result, hostSnapshot, targetDefinition);
       return {
         host: hostDefinition.displayName,
         target: targetDefinition.displayName,
         mode,
         text: result.text,
-        witness: formatMinorWitness(result, hostSnapshot, targetDefinition).trim()
+        witness: formatMinorWitness(result, hostSnapshot, targetDefinition).trim(),
+        highlight: summarizeContainmentHighlight()
       };
     }
 
@@ -5207,6 +5488,7 @@
       findContainment: findContainmentForTest,
       findMinor: findMinorForTest,
       getGraphSnapshot: getGraphSnapshotForTest,
+      getHighlight: () => summarizeContainmentHighlight(),
       getParameters: getParameterValuesForTest,
       loadGraph: loadGraphForTest,
       loadMatrix: loadMatrixForTest,
@@ -5306,6 +5588,9 @@
     propertyBox.addEventListener("change", (event) => {
       if (event.target && event.target.id === "containmentModeSelect") {
         containmentMode = event.target.value;
+        containmentHighlight = null;
+        minorResultText = "";
+        updateView();
       }
     });
     propertyBox.addEventListener("click", (event) => {
