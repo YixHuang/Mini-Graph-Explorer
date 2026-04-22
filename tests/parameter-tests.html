@@ -423,6 +423,51 @@
         }
       },
       {
+        name: "Disjoint union plus parser",
+        description: "P3 + C4",
+        expected: {
+          name: "disjoint union of P_3, C_4",
+          vertexCount: "7",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Disjoint union comma parser",
+        description: "P3, C4",
+        expected: {
+          name: "disjoint union of P_3, C_4",
+          vertexCount: "7",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Disjoint union preserves complete bipartite comma",
+        description: "K_{3,4}, C5",
+        expected: {
+          name: "disjoint union of K_{3,4}, C_5",
+          vertexCount: "12",
+          edgeCount: "17"
+        }
+      },
+      {
+        name: "Disjoint union keeps function argument comma",
+        description: "Power(P5, 2), C3",
+        expected: {
+          name: "disjoint union of square of P_5, C_3",
+          vertexCount: "8",
+          edgeCount: "10"
+        }
+      },
+      {
+        name: "Disjoint union comma before copied complete graph",
+        description: "P3, 2K3",
+        expected: {
+          name: "disjoint union of P_3, 2K_3",
+          vertexCount: "9",
+          edgeCount: "8"
+        }
+      },
+      {
         name: "Complement parser",
         description: "complement of C5",
         expected: {

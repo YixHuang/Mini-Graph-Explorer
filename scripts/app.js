@@ -4172,6 +4172,11 @@
         description: "Disjoint union of multiple copies of a complete graph."
       },
       {
+        pattern: "G + H, P3 + C4, G, H",
+        example: "P3 + C4",
+        description: "Disjoint union of two or more graph descriptions."
+      },
+      {
         pattern: "Q3, Q_3",
         example: "Q3",
         description: "n-dimensional cube graph."
@@ -4697,6 +4702,76 @@
         "standard",
         { type: "copies", copies, base: baseDefinition.meta || { type: "custom" } }
       );
+    }
+
+    function disjointUnionPositions(definitions) {
+      const componentCount = definitions.length;
+      const columns = Math.ceil(Math.sqrt(componentCount));
+      const rows = Math.ceil(componentCount / columns);
+      const cellWidth = graphCanvas.width / columns;
+      const cellHeight = graphCanvas.height / rows;
+      const positions = [];
+
+      definitions.forEach((definition, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        const marginX = Math.min(42, cellWidth * 0.18);
+        const marginY = Math.min(42, cellHeight * 0.18);
+        const basePositions = fallbackPositions(definition);
+        const cellPositions = transformPositions(basePositions, {
+          minX: column * cellWidth + marginX,
+          maxX: (column + 1) * cellWidth - marginX,
+          minY: row * cellHeight + marginY,
+          maxY: (row + 1) * cellHeight - marginY
+        });
+
+        positions.push(...cellPositions);
+      });
+
+      return positions;
+    }
+
+    function disjointUnionDefinition(definitions) {
+      if (definitions.length < 2) {
+        throw new Error("Disjoint union needs at least two graph descriptions.");
+      }
+
+      const vertexCount = definitions.reduce((sum, definition) => sum + definition.vertexCount, 0);
+      ensureGeneratedSize(vertexCount);
+      const edgePairs = [];
+      const labels = [];
+      const usedLabels = new Set();
+      let offset = 0;
+
+      definitions.forEach((definition, componentIndex) => {
+        for (const edge of definition.edgePairs || []) {
+          addUniqueEdge(edgePairs, edge.from + offset, edge.to + offset, edge.kind || "normal");
+        }
+
+        for (let vertex = 0; vertex < definition.vertexCount; vertex += 1) {
+          const label = getDefinitionVertexLabel(definition, vertex);
+          labels.push(uniqueGeneratedLabel(label, usedLabels, `${label}_${componentIndex + 1}_`, vertex));
+        }
+
+        offset += definition.vertexCount;
+      });
+
+      const displayName = `disjoint union of ${definitions.map((definition) => definition.displayName).join(", ")}`;
+      const definition = makeDefinition(
+        vertexCount,
+        edgePairs,
+        displayName,
+        disjointUnionPositions(definitions),
+        "standard",
+        {
+          type: "disjoint-union",
+          components: definitions.map((item) => item.meta || { type: "custom" }),
+          constructionHint: `${displayName}: keep each component separate and add no edges between components.`
+        }
+      );
+
+      definition.labels = labels;
+      return definition;
     }
 
     function makeCompleteDefinition(size) {
@@ -5416,6 +5491,53 @@
       return pairs.filter(([left, right]) => left && right);
     }
 
+    function splitTopLevelUnionParts(text) {
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+
+        if (character === "(") {
+          depth += 1;
+          continue;
+        }
+
+        if (character === ")") {
+          depth = Math.max(0, depth - 1);
+          continue;
+        }
+
+        if (depth !== 0) {
+          continue;
+        }
+
+        const rest = text.slice(index + 1).trimStart();
+        const commaStartsGraphDescription = character === "," && (/^[a-z]/.test(rest) || /^\d+\s*k/.test(rest));
+        if (character !== "+" && !commaStartsGraphDescription) {
+          continue;
+        }
+
+        const part = text.slice(start, index).trim();
+        if (part) {
+          parts.push(part);
+        }
+        start = index + 1;
+      }
+
+      const finalPart = text.slice(start).trim();
+      if (finalPart) {
+        parts.push(finalPart);
+      }
+
+      return parts.length > 1 ? parts : [];
+    }
+
+    function parseDisjointUnionParts(parts) {
+      return disjointUnionDefinition(parts.map((part) => parseGraphPhrase(part)));
+    }
+
     function tryPowerDefinition(graphText, exponentText) {
       const exponent = parsePowerCount(exponentText);
 
@@ -5850,7 +5972,12 @@
         return makeEmptyDefinition(parseVertexCount(match[1], 3));
       }
 
-      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, L^2(K5), square of C5, or Power(G, 3).");
+      const unionParts = splitTopLevelUnionParts(phrase);
+      if (unionParts.length > 1) {
+        return parseDisjointUnionParts(unionParts);
+      }
+
+      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, P3 + C4, G, H, L^2(K5), or Power(G, 3).");
     }
 
     function parseGraphDescription(text) {
