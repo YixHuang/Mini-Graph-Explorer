@@ -3292,7 +3292,7 @@
       }
     }
 
-    function renderProperty() {
+    function getPropertyRows() {
       const connected = nodes.length > 0 && isConnected();
       const vertexConnectivity = getVertexConnectivityResult();
       const edgeConnectivity = getEdgeConnectivityResult();
@@ -3307,25 +3307,29 @@
       const genus = getGenusResult();
       const traceable = getTraceableResult();
       const treewidth = getTreewidthResult();
-      const properties = [
-        ["Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No", "BFS from one vertex; Yes iff every vertex is reached."],
-        ["Vertex connectivity &kappa;(G)", vertexConnectivity.text, "Exact max-flow with vertex splitting; returns the smallest vertex cut."],
-        ["Edge connectivity &lambda;(G)", edgeConnectivity.text, "Exact unit-capacity max-flow from one vertex to all others."],
-        ["Toughness", toughness.text, "Minimizes |S| / components(G-S) for <=20 vertices; otherwise shows a bound."],
-        ["Hamiltonian?", hamiltonian.text, "Hamiltonian cycle: exact DP for <=20 vertices, then bounded DFS/special cases."],
-        ["Traceable?", traceable.text, "Hamiltonian path: special cases, then bounded DFS up to 30 vertices."],
-        ["Planar?", planar.text, "Known families, edge-count tests, reductions, then K5/K3,3 minor search for small cores."],
-        ["Genus", genus.text, "Exact formulas for known families; otherwise Euler lower bound plus planarity result."],
-        ["Treewidth tw(G)", treewidth.text, "Known exact cases; otherwise elimination lower/upper bounds and exact search up to 11 vertices."],
-        ["Independence number &alpha;(G)", independenceNumber.text, "Known exact cases; otherwise exhaustive subset search for <=20 vertices."],
-        ["Chromatic number &chi;(G)", chromaticNumber.text, "Known exact cases; otherwise backtracking color search, or a greedy upper bound."],
-        ["Chromatic index &chi;&prime;(G)", chromaticIndex.text, "Tests edge colorings with Delta and Delta+1; large non-bipartite graphs show a bound."],
-        ["Girth", girth.text, "BFS from every vertex; shortest detected cycle, or Infinity if acyclic."],
-        ["Diameter", distances.diameter, "BFS distances from every vertex; maximum eccentricity."],
-        ["Radius", distances.radius, "BFS distances from every vertex; minimum eccentricity."]
+      return [
+        ["connected", "Connected?", nodes.length === 0 ? "No graph yet" : connected ? "Yes" : "No", "BFS from one vertex; Yes iff every vertex is reached."],
+        ["vertexConnectivity", "Vertex connectivity &kappa;(G)", vertexConnectivity.text, "Exact max-flow with vertex splitting; returns the smallest vertex cut."],
+        ["edgeConnectivity", "Edge connectivity &lambda;(G)", edgeConnectivity.text, "Exact unit-capacity max-flow from one vertex to all others."],
+        ["toughness", "Toughness", toughness.text, "Minimizes |S| / components(G-S) for <=20 vertices; otherwise shows a bound."],
+        ["hamiltonian", "Hamiltonian?", hamiltonian.text, "Hamiltonian cycle: exact DP for <=20 vertices, then bounded DFS/special cases."],
+        ["traceable", "Traceable?", traceable.text, "Hamiltonian path: special cases, then bounded DFS up to 30 vertices."],
+        ["planar", "Planar?", planar.text, "Known families, edge-count tests, reductions, then K5/K3,3 minor search for small cores."],
+        ["genus", "Genus", genus.text, "Exact formulas for known families; otherwise Euler lower bound plus planarity result."],
+        ["treewidth", "Treewidth tw(G)", treewidth.text, "Known exact cases; otherwise elimination lower/upper bounds and exact search up to 11 vertices."],
+        ["independenceNumber", "Independence number &alpha;(G)", independenceNumber.text, "Known exact cases; otherwise exhaustive subset search for <=20 vertices."],
+        ["chromaticNumber", "Chromatic number &chi;(G)", chromaticNumber.text, "Known exact cases; otherwise backtracking color search, or a greedy upper bound."],
+        ["chromaticIndex", "Chromatic index &chi;&prime;(G)", chromaticIndex.text, "Tests edge colorings with Delta and Delta+1; large non-bipartite graphs show a bound."],
+        ["girth", "Girth", girth.text, "BFS from every vertex; shortest detected cycle, or Infinity if acyclic."],
+        ["diameter", "Diameter", distances.diameter, "BFS distances from every vertex; maximum eccentricity."],
+        ["radius", "Radius", distances.radius, "BFS distances from every vertex; minimum eccentricity."]
       ];
+    }
 
-      propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value, hint]) => (
+    function renderProperty() {
+      const properties = getPropertyRows();
+
+      propertyBox.innerHTML = `<div class="property-grid">${properties.map(([, name, value, hint]) => (
         `<div class="property-card"><span class="property-name">${name}<span class="parameter-help" tabindex="0" role="button" title="${escapeHtml(hint)}" aria-label="${escapeHtml(hint)}" data-tooltip="${escapeHtml(hint)}">?</span></span><strong>${value}</strong></div>`
       )).join("")}</div>
       <div class="property-actions">
@@ -4862,6 +4866,48 @@
       pointer.wasFixed = false;
       updateView();
     }
+
+    function getParameterValuesForTest() {
+      return Object.fromEntries(getPropertyRows().map(([id, name, value, hint]) => [
+        id,
+        {
+          name,
+          value: String(value),
+          hint
+        }
+      ]));
+    }
+
+    function getGraphSnapshotForTest() {
+      return {
+        name: currentGraphName,
+        vertexCount: nodes.length,
+        edgeCount: edges.length,
+        vertices: nodes.map((node) => node.label),
+        edges: edges.map((edge) => ({ from: edge.from, to: edge.to })),
+        parameters: getParameterValuesForTest()
+      };
+    }
+
+    function loadGraphForTest(description) {
+      const definition = parseGraphDescription(description);
+      setGraphFromDefinition(definition, definition.displayName);
+      updateView();
+      return getGraphSnapshotForTest();
+    }
+
+    function clearGraphForTest() {
+      clearGraphData();
+      updateView();
+      return getGraphSnapshotForTest();
+    }
+
+    window.MiniGraphExplorerTestAPI = {
+      clearGraph: clearGraphForTest,
+      getGraphSnapshot: getGraphSnapshotForTest,
+      getParameters: getParameterValuesForTest,
+      loadGraph: loadGraphForTest
+    };
 
     function animate() {
       if (nodes.length > 0) {

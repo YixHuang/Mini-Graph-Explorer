@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Graph Explorer Parameter Tests</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      font-family: Georgia, "Times New Roman", serif;
+      color: #1f2a37;
+      background: #f5f1e8;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .summary {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      border: 1px solid #d7cdbd;
+      border-radius: 12px;
+      background: #fffaf2;
+      font-weight: 700;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fffaf2;
+    }
+
+    th,
+    td {
+      padding: 0.5rem 0.6rem;
+      border: 1px solid #d7cdbd;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #d9efe8;
+    }
+
+    .pass {
+      color: #1e6f5c;
+      font-weight: 700;
+    }
+
+    .fail {
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    iframe {
+      width: 1px;
+      height: 1px;
+      border: 0;
+      position: absolute;
+      left: -9999px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Parameter Tests</h1>
+  <p>These tests load the real explorer in a hidden iframe and check the parameter values exposed by the app test API.</p>
+  <div id="summary" class="summary">Running...</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Case</th>
+        <th>Check</th>
+        <th>Expected</th>
+        <th>Actual</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+  <iframe id="appFrame" src="../index.html" title="Mini Graph Explorer test target"></iframe>
+
+  <script>
+    const cases = [
+      {
+        name: "Empty graph",
+        run: (api) => api.clearGraph(),
+        expected: {
+          vertexCount: "0",
+          edgeCount: "0",
+          connected: "No graph yet",
+          vertexConnectivity: "0",
+          edgeConnectivity: "0",
+          hamiltonian: "No",
+          traceable: "No",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "0",
+          independenceNumber: "0",
+          chromaticNumber: "0",
+          chromaticIndex: "0",
+          girth: "Infinity",
+          diameter: "N/A",
+          radius: "N/A"
+        }
+      },
+      {
+        name: "K3",
+        description: "K3",
+        expected: {
+          vertexCount: "3",
+          edgeCount: "3",
+          connected: "Yes",
+          vertexConnectivity: "2",
+          edgeConnectivity: "2",
+          toughness: "Infinity",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "2",
+          independenceNumber: "1",
+          chromaticNumber: "3",
+          chromaticIndex: "3",
+          girth: "3",
+          diameter: "1",
+          radius: "1"
+        }
+      },
+      {
+        name: "P3",
+        description: "P3",
+        expected: {
+          vertexCount: "3",
+          edgeCount: "2",
+          connected: "Yes",
+          vertexConnectivity: "1",
+          edgeConnectivity: "1",
+          toughness: "1/2",
+          hamiltonian: "No",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "1",
+          independenceNumber: "2",
+          chromaticNumber: "2",
+          chromaticIndex: "2",
+          girth: "Infinity",
+          diameter: "2",
+          radius: "1"
+        }
+      },
+      {
+        name: "C4",
+        description: "C4",
+        expected: {
+          vertexCount: "4",
+          edgeCount: "4",
+          connected: "Yes",
+          vertexConnectivity: "2",
+          edgeConnectivity: "2",
+          toughness: "1",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "2",
+          independenceNumber: "2",
+          chromaticNumber: "2",
+          chromaticIndex: "2",
+          girth: "4",
+          diameter: "2",
+          radius: "2"
+        }
+      },
+      {
+        name: "K_{3,3}",
+        description: "K_{3,3}",
+        expected: {
+          vertexCount: "6",
+          edgeCount: "9",
+          connected: "Yes",
+          vertexConnectivity: "3",
+          edgeConnectivity: "3",
+          toughness: "1",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "No",
+          genus: "1",
+          treewidth: "3",
+          independenceNumber: "3",
+          chromaticNumber: "2",
+          chromaticIndex: "3",
+          girth: "4",
+          diameter: "2",
+          radius: "2"
+        }
+      }
+    ];
+
+    const frame = document.getElementById("appFrame");
+    const summary = document.getElementById("summary");
+    const results = document.getElementById("results");
+
+    function waitForApi() {
+      return new Promise((resolve, reject) => {
+        const started = Date.now();
+        const timer = setInterval(() => {
+          const api = frame.contentWindow && frame.contentWindow.MiniGraphExplorerTestAPI;
+          if (api) {
+            clearInterval(timer);
+            resolve(api);
+            return;
+          }
+
+          if (Date.now() - started > 5000) {
+            clearInterval(timer);
+            reject(new Error("MiniGraphExplorerTestAPI was not found."));
+          }
+        }, 50);
+      });
+    }
+
+    function getActual(snapshot, key) {
+      if (key === "vertexCount" || key === "edgeCount") {
+        return String(snapshot[key]);
+      }
+
+      return snapshot.parameters[key] ? snapshot.parameters[key].value : "(missing)";
+    }
+
+    function addRow(caseName, key, expected, actual) {
+      const passed = expected === actual;
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${caseName}</td>
+        <td>${key}</td>
+        <td>${expected}</td>
+        <td>${actual}</td>
+        <td class="${passed ? "pass" : "fail"}">${passed ? "PASS" : "FAIL"}</td>
+      `;
+      results.append(row);
+      return passed;
+    }
+
+    async function runTests() {
+      const api = await waitForApi();
+      let passed = 0;
+      let total = 0;
+
+      for (const testCase of cases) {
+        const snapshot = testCase.run
+          ? testCase.run(api)
+          : api.loadGraph(testCase.description);
+
+        for (const [key, expected] of Object.entries(testCase.expected)) {
+          const actual = getActual(snapshot, key);
+          total += 1;
+          if (addRow(testCase.name, key, expected, actual)) {
+            passed += 1;
+          }
+        }
+      }
+
+      summary.textContent = `${passed}/${total} checks passed.`;
+      summary.className = `summary ${passed === total ? "pass" : "fail"}`;
+    }
+
+    frame.addEventListener("load", () => {
+      runTests().catch((error) => {
+        summary.textContent = error.message;
+        summary.className = "summary fail";
+      });
+    });
+  </script>
+</body>
+</html>

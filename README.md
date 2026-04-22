@@ -9,6 +9,11 @@ This README is written to make the displayed graph parameters easy to audit agai
 - `index.html`: page structure and links to the external CSS/JS files.
 - `styles/main.css`: all visual styling.
 - `scripts/app.js`: graph state, graph generation/parsing, drawing, UI events, and parameter algorithms.
+- `tests/parameter-tests.html`: browser-based regression tests for selected standard graphs and displayed parameters.
+
+## Running Checks
+
+Open `tests/parameter-tests.html` in a browser. The test page loads the real explorer in a hidden iframe, uses `window.MiniGraphExplorerTestAPI`, and checks selected parameter values for standard graphs such as `K3`, `P3`, `C4`, and `K_{3,3}`.
 
 ## Shared Conventions
 
