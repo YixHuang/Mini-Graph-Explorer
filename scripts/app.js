@@ -4034,8 +4034,8 @@
         description: "Complement graph on the same vertex set."
       },
       {
-        pattern: "line graph of G, line graph of K5, line graph of Petersen graph",
-        example: "line graph of K5",
+        pattern: "L(G), L(K5), line graph of G, line graph of Petersen graph",
+        example: "L(K5)",
         description: "Line graph L(G): one vertex for each edge of G, with adjacent vertices for incident edges."
       },
       {
@@ -4942,11 +4942,16 @@
       const lineGraphPrefix = "line graph of ";
       const compactPhrase = phrase.replace(/\s+/g, "");
       let compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
+      const lineNotationMatch = phrase.match(/^l\s*\((.+)\)$/);
 
       for (const prefix of complementPrefixes) {
         if (phrase.startsWith(prefix)) {
           return complementDefinition(parseGraphPhrase(phrase.slice(prefix.length)));
         }
+      }
+
+      if (lineNotationMatch) {
+        return lineGraphDefinition(parseGraphPhrase(lineNotationMatch[1]));
       }
 
       if (phrase.startsWith(lineGraphPrefix)) {

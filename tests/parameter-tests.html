@@ -450,6 +450,24 @@
         }
       },
       {
+        name: "Line graph shorthand parser",
+        description: "L(K5)",
+        expected: {
+          name: "line graph of K_5",
+          vertexCount: "10",
+          edgeCount: "30"
+        }
+      },
+      {
+        name: "Nested line graph shorthand parser",
+        description: "L(complement of C5)",
+        expected: {
+          name: "line graph of complement of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
         name: "Line graph of path parser",
         description: "line graph of P4",
         expected: {
