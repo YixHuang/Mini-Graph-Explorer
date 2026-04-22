@@ -479,14 +479,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 1.08rem;
-      height: 1.08rem;
-      margin-left: 0.35rem;
+      width: 0.86rem;
+      height: 0.86rem;
+      margin-left: 0.24rem;
       border: 1px solid rgba(30, 111, 92, 0.3);
       border-radius: 999px;
       background: var(--accent);
       color: #fffaf2;
-      font-size: 0.72rem;
+      font-size: 0.58rem;
       font-weight: 700;
       line-height: 1;
       cursor: help;
