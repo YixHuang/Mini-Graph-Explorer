@@ -314,6 +314,144 @@
       }
     ];
 
+    const parserCases = [
+      {
+        name: "K34 compact complete bipartite notation",
+        description: "K34",
+        expected: {
+          name: "K_{3,4}",
+          vertexCount: "7",
+          edgeCount: "12"
+        }
+      },
+      {
+        name: "K_34 complete graph notation",
+        description: "K_34",
+        expected: {
+          name: "K_34",
+          vertexCount: "34",
+          edgeCount: "561"
+        }
+      },
+      {
+        name: "K 34 spaced complete graph notation",
+        description: "K 34",
+        expected: {
+          name: "K_34",
+          vertexCount: "34",
+          edgeCount: "561"
+        }
+      },
+      {
+        name: "Natural complete bipartite notation",
+        description: "complete bipartite graph on 3 and 4 vertices",
+        expected: {
+          name: "K_{3,4}",
+          vertexCount: "7",
+          edgeCount: "12"
+        }
+      },
+      {
+        name: "Complement parser",
+        description: "complement of C5",
+        expected: {
+          name: "complement of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
+        name: "Join parser",
+        description: "join of C3 and P4",
+        expected: {
+          name: "join of C_3, P_4",
+          vertexCount: "7",
+          edgeCount: "18"
+        }
+      },
+      {
+        name: "Cartesian product parser",
+        description: "Cartesian product of C4 and P3",
+        expected: {
+          name: "Cartesian product of C_4, P_3",
+          vertexCount: "12",
+          edgeCount: "20"
+        }
+      },
+      {
+        name: "Balanced bipartite parser",
+        description: "complete balanced bipartite graph on 8 vertices",
+        expected: {
+          name: "K_{4,4}",
+          vertexCount: "8",
+          edgeCount: "16"
+        }
+      }
+    ];
+
+    const matrixCases = [
+      {
+        name: "Compact P3 adjacency matrix",
+        matrix: "010\n101\n010",
+        expected: {
+          name: "Adjacency matrix graph (3 vertices)",
+          vertexCount: "3",
+          edgeCount: "2",
+          connected: "Yes",
+          treewidth: "1",
+          girth: "Infinity"
+        }
+      },
+      {
+        name: "Semicolon C4 adjacency matrix",
+        matrix: "[0,1,0,1;1,0,1,0;0,1,0,1;1,0,1,0]",
+        expected: {
+          name: "Adjacency matrix graph (4 vertices)",
+          vertexCount: "4",
+          edgeCount: "4",
+          connected: "Yes",
+          chromaticNumber: "2",
+          girth: "4"
+        }
+      }
+    ];
+
+    const matrixErrorCases = [
+      {
+        name: "Nonsquare matrix rejection",
+        matrix: "0 1\n1 0\n0 1",
+        expected: "Adjacency matrix must be square: the number of rows must equal every row length."
+      },
+      {
+        name: "Loop matrix rejection",
+        matrix: "1 0\n0 0",
+        expected: "Diagonal entries must be 0 for a simple graph."
+      },
+      {
+        name: "Asymmetric matrix rejection",
+        matrix: "0 1\n0 0",
+        expected: "Adjacency matrix must be symmetric for an undirected graph."
+      }
+    ];
+
+    const spectrumCases = [
+      {
+        name: "K3 spectrum",
+        description: "K3",
+        expected: "2, -1^{2}"
+      },
+      {
+        name: "P3 spectrum",
+        description: "P3",
+        expected: "√2, 0, -√2"
+      },
+      {
+        name: "C4 spectrum",
+        description: "C4",
+        expected: "2, 0^{2}, -2"
+      }
+    ];
+
     const frame = document.getElementById("appFrame");
     const summary = document.getElementById("summary");
     const results = document.getElementById("results");
@@ -359,6 +497,21 @@
       return passed;
     }
 
+    function checkObject(caseName, actualObject, expectedObject) {
+      let passed = 0;
+      let total = 0;
+
+      for (const [key, expected] of Object.entries(expectedObject)) {
+        const actual = String(actualObject[key]);
+        total += 1;
+        if (addRow(caseName, key, expected, actual)) {
+          passed += 1;
+        }
+      }
+
+      return { passed, total };
+    }
+
     async function runTests() {
       const api = await waitForApi();
       let passed = 0;
@@ -375,6 +528,51 @@
           if (addRow(testCase.name, key, expected, actual)) {
             passed += 1;
           }
+        }
+      }
+
+      for (const testCase of parserCases) {
+        const parsed = api.parseGraph(testCase.description);
+        const result = checkObject(testCase.name, parsed, testCase.expected);
+        passed += result.passed;
+        total += result.total;
+      }
+
+      for (const testCase of matrixCases) {
+        const snapshot = api.loadMatrix(testCase.matrix);
+        const actual = {
+          name: snapshot.name,
+          vertexCount: String(snapshot.vertexCount),
+          edgeCount: String(snapshot.edgeCount),
+          connected: getActual(snapshot, "connected"),
+          treewidth: getActual(snapshot, "treewidth"),
+          chromaticNumber: getActual(snapshot, "chromaticNumber"),
+          girth: getActual(snapshot, "girth")
+        };
+        const result = checkObject(testCase.name, actual, testCase.expected);
+        passed += result.passed;
+        total += result.total;
+      }
+
+      for (const testCase of matrixErrorCases) {
+        let actual = "(no error)";
+        try {
+          api.parseMatrix(testCase.matrix);
+        } catch (error) {
+          actual = error.message;
+        }
+
+        total += 1;
+        if (addRow(testCase.name, "matrix error", testCase.expected, actual)) {
+          passed += 1;
+        }
+      }
+
+      for (const testCase of spectrumCases) {
+        const actual = api.spectrum(testCase.description);
+        total += 1;
+        if (addRow(testCase.name, "spectrum", testCase.expected, actual)) {
+          passed += 1;
         }
       }
 

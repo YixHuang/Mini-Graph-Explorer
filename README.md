@@ -13,7 +13,19 @@ This README is written to make the displayed graph parameters easy to audit agai
 
 ## Running Checks
 
-Open `tests/parameter-tests.html` in a browser. The test page loads the real explorer in a hidden iframe, uses `window.MiniGraphExplorerTestAPI`, and checks selected parameter values for standard graphs such as `K3`, `P3`, `C4`, `K5`, `K_{3,3}`, Petersen graph, and `Q3`. It also includes a few minor-containment checks with witness expectations.
+Run the browser regression suite from the command line:
+
+```sh
+node scripts/run-parameter-tests.mjs
+```
+
+The command needs Chrome or Chromium. It discovers common local Chrome installs automatically; if needed, set `CHROME_PATH` to a Chrome executable.
+
+You can also open `tests/parameter-tests.html` in a browser. The test page loads the real explorer in a hidden iframe, uses `window.MiniGraphExplorerTestAPI`, and checks selected parameter values for standard graphs such as `K3`, `P3`, `C4`, `K5`, `K_{3,3}`, Petersen graph, and `Q3`. It also includes a few minor-containment checks with witness expectations.
+
+## Deployment
+
+The app is static. GitHub Actions deploys the repository root to GitHub Pages on pushes to `main`, so `index.html`, `styles/`, and `scripts/` are served without a build step.
 
 ## Shared Conventions
 

@@ -151,7 +151,7 @@
     function validateSavedGraphName(value) {
       const name = value.trim().replace(/\s+/g, " ");
       const key = savedGraphLookupKey(name);
-      const compactKey = key.replace(/\s+/g, "");
+      const compactKey = key.replace(/[\s_]+/g, "");
       const reservedWords = new Set([
         "join",
         "cartesian",
@@ -851,65 +851,6 @@
       }
 
       return best;
-    }
-
-    function isRemainingConnected(removed, adjacencyList) {
-      const vertexCount = adjacencyList.length;
-      let start = -1;
-      let activeCount = 0;
-
-      for (let index = 0; index < vertexCount; index += 1) {
-        if (!removed.has(index)) {
-          activeCount += 1;
-          if (start === -1) {
-            start = index;
-          }
-        }
-      }
-
-      if (activeCount <= 1) {
-        return false;
-      }
-
-      const visited = new Set([start]);
-      const queue = [start];
-
-      while (queue.length > 0) {
-        const current = queue.shift();
-
-        for (const next of adjacencyList[current]) {
-          if (!removed.has(next) && !visited.has(next)) {
-            visited.add(next);
-            queue.push(next);
-          }
-        }
-      }
-
-      return visited.size === activeCount;
-    }
-
-    function hasDisconnectingVertexSet(size, adjacencyList) {
-      const removed = new Set();
-      const vertexCount = adjacencyList.length;
-
-      function choose(start, depth) {
-        if (depth === size) {
-          return !isRemainingConnected(removed, adjacencyList);
-        }
-
-        const remainingChoices = size - depth;
-        for (let index = start; index <= vertexCount - remainingChoices; index += 1) {
-          removed.add(index);
-          if (choose(index + 1, depth + 1)) {
-            return true;
-          }
-          removed.delete(index);
-        }
-
-        return false;
-      }
-
-      return choose(0, 0);
     }
 
     function getVertexConnectivityResult() {
@@ -2153,65 +2094,6 @@
       return { text: String(vertexCount) };
     }
 
-    function isConnectedWithoutEdges(removedEdges) {
-      if (nodes.length <= 1) {
-        return true;
-      }
-
-      const indexByLabel = new Map(nodes.map((node, index) => [node.label, index]));
-      const adjacencyList = nodes.map(() => []);
-
-      edges.forEach((edge, edgeIndex) => {
-        if (removedEdges.has(edgeIndex)) {
-          return;
-        }
-
-        const from = indexByLabel.get(edge.from);
-        const to = indexByLabel.get(edge.to);
-        adjacencyList[from].push(to);
-        adjacencyList[to].push(from);
-      });
-
-      const visited = new Set([0]);
-      const queue = [0];
-
-      while (queue.length > 0) {
-        const current = queue.shift();
-
-        for (const next of adjacencyList[current]) {
-          if (!visited.has(next)) {
-            visited.add(next);
-            queue.push(next);
-          }
-        }
-      }
-
-      return visited.size === nodes.length;
-    }
-
-    function hasDisconnectingEdgeSet(size) {
-      const removed = new Set();
-
-      function choose(start, depth) {
-        if (depth === size) {
-          return !isConnectedWithoutEdges(removed);
-        }
-
-        const remainingChoices = size - depth;
-        for (let edgeIndex = start; edgeIndex <= edges.length - remainingChoices; edgeIndex += 1) {
-          removed.add(edgeIndex);
-          if (choose(edgeIndex + 1, depth + 1)) {
-            return true;
-          }
-          removed.delete(edgeIndex);
-        }
-
-        return false;
-      }
-
-      return choose(0, 0);
-    }
-
     function getEdgeConnectivityResult() {
       if (nodes.length <= 1 || !isConnected()) {
         return { text: "0" };
@@ -2900,79 +2782,6 @@
       return "Unknown";
     }
 
-    function hasCompleteSubgraph(size) {
-      if (nodes.length < size) {
-        return false;
-      }
-
-      const { adjacencyList } = buildAdjacencyInfo();
-      const adjacencySets = adjacencyList.map((neighbors) => new Set(neighbors));
-      const chosen = [];
-
-      function choose(start) {
-        if (chosen.length === size) {
-          return true;
-        }
-
-        for (let vertex = start; vertex <= nodes.length - (size - chosen.length); vertex += 1) {
-          if (chosen.every((other) => adjacencySets[vertex].has(other))) {
-            chosen.push(vertex);
-            if (choose(vertex + 1)) {
-              return true;
-            }
-            chosen.pop();
-          }
-        }
-
-        return false;
-      }
-
-      return choose(0);
-    }
-
-    function hasK33Subgraph() {
-      if (nodes.length < 6) {
-        return false;
-      }
-
-      const { adjacencyList } = buildAdjacencyInfo();
-      const adjacencySets = adjacencyList.map((neighbors) => new Set(neighbors));
-      const vertices = adjacencyList.map((_, index) => index);
-
-      function combinations(items, size, start = 0, picked = [], output = []) {
-        if (picked.length === size) {
-          output.push(picked.slice());
-          return output;
-        }
-
-        for (let index = start; index <= items.length - (size - picked.length); index += 1) {
-          picked.push(items[index]);
-          combinations(items, size, index + 1, picked, output);
-          picked.pop();
-        }
-
-        return output;
-      }
-
-      const triples = combinations(vertices, 3);
-      for (let i = 0; i < triples.length; i += 1) {
-        for (let j = i + 1; j < triples.length; j += 1) {
-          const left = triples[i];
-          const right = triples[j];
-
-          if (left.some((vertex) => right.includes(vertex))) {
-            continue;
-          }
-
-          if (left.every((a) => right.every((b) => adjacencySets[a].has(b)))) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    }
-
     function getGenusResult() {
       const currentDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
 
@@ -3038,20 +2847,6 @@
       }
 
       return { text: "Unknown" };
-    }
-
-    function isPositiveGenusLowerBound(value) {
-      const text = String(value).trim();
-
-      if (text.startsWith("≥")) {
-        return Number(text.slice(1).trim()) > 0;
-      }
-
-      if (text.startsWith(">=")) {
-        return Number(text.slice(2).trim()) > 0;
-      }
-
-      return false;
     }
 
     function getPlanarityResult() {
@@ -3529,7 +3324,7 @@
     function normalizeDescription(text) {
       const cleaned = text
         .toLowerCase()
-        .replace(/[{}_.;:!?]/g, " ")
+        .replace(/[{}.;:!?]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -4309,18 +4104,6 @@
       return [...flattenMeta(meta.left, type), ...flattenMeta(meta.right, type)];
     }
 
-    function displayNameListFromMeta(meta, fallback) {
-      if (!meta) {
-        return [fallback || "graph"];
-      }
-
-      if (meta.displayName) {
-        return [meta.displayName];
-      }
-
-      return [fallback || "graph"];
-    }
-
     function flattenedDisplayNames(leftDefinition, rightDefinition, type) {
       const leftItems = leftDefinition.meta && leftDefinition.meta.type === type
         ? flattenMeta(leftDefinition.meta, type).map((item) => item.displayName || "graph")
@@ -4389,6 +4172,16 @@
 
       compactMatch = compactPhrase.match(/^k_?(\d+)$/);
       if (compactMatch) {
+        const compactBipartiteMatch = phrase.match(/^k(\d)(\d)$/);
+        if (compactBipartiteMatch) {
+          const left = parseSmallNumber(compactBipartiteMatch[1]);
+          const right = parseSmallNumber(compactBipartiteMatch[2]);
+
+          if (left >= 2 && right >= 2) {
+            return makeCompleteBipartiteDefinition(left, right);
+          }
+        }
+
         const completeSize = parseSmallNumber(compactMatch[1]);
 
         if (completeSize) {
@@ -4896,6 +4689,35 @@
       return getGraphSnapshotForTest();
     }
 
+    function summarizeDefinitionForTest(definition) {
+      return {
+        name: definition.displayName,
+        vertexCount: definition.vertexCount,
+        edgeCount: (definition.edgePairs || []).length
+      };
+    }
+
+    function parseGraphForTest(description) {
+      return summarizeDefinitionForTest(parseGraphDescription(description));
+    }
+
+    function parseMatrixForTest(text) {
+      return summarizeDefinitionForTest(makeDefinitionFromAdjacencyMatrix(parseAdjacencyMatrix(text)));
+    }
+
+    function loadMatrixForTest(text) {
+      const definition = makeDefinitionFromAdjacencyMatrix(parseAdjacencyMatrix(text));
+      setGraphFromDefinition(definition, definition.displayName);
+      updateView();
+      return getGraphSnapshotForTest();
+    }
+
+    function getSpectrumForTest(description) {
+      const definition = parseGraphDescription(description);
+      setGraphFromDefinition(definition, definition.displayName);
+      return formatSpectrum(jacobiEigenvaluesSymmetric(buildAdjacencyMatrix()));
+    }
+
     function findMinorForTest(hostDescription, targetDescription) {
       const hostDefinition = parseGraphDescription(hostDescription);
       const targetDefinition = parseGraphDescription(targetDescription);
@@ -4923,7 +4745,11 @@
       findMinor: findMinorForTest,
       getGraphSnapshot: getGraphSnapshotForTest,
       getParameters: getParameterValuesForTest,
-      loadGraph: loadGraphForTest
+      loadGraph: loadGraphForTest,
+      loadMatrix: loadMatrixForTest,
+      parseGraph: parseGraphForTest,
+      parseMatrix: parseMatrixForTest,
+      spectrum: getSpectrumForTest
     };
 
     function animate() {
