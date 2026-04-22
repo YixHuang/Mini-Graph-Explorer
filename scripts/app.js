@@ -49,6 +49,7 @@
     let nodeColor = "#1e6f5c";
     let edgeColor = "#8b6f47";
     let minorQuery = "";
+    let containmentMode = "minor";
     let minorResultText = "";
     let spectrumResultText = "";
 
@@ -1781,6 +1782,399 @@
       };
     }
 
+    function getSubgraphContainmentResult(hostDefinition, targetDefinition) {
+      if (targetDefinition.vertexCount === 0) {
+        return {
+          text: "Yes",
+          witness: {
+            type: "trivial",
+            description: "The empty graph is a subgraph of every graph."
+          }
+        };
+      }
+
+      if (hostDefinition.vertexCount === 0 || targetDefinition.vertexCount > hostDefinition.vertexCount) {
+        return { text: "No" };
+      }
+
+      if ((targetDefinition.edgePairs || []).length > (hostDefinition.edgePairs || []).length) {
+        return { text: "No" };
+      }
+
+      const subgraphSearch = hasSubgraphEmbedding(hostDefinition, targetDefinition);
+      if (subgraphSearch.found) {
+        return { text: "Yes", witness: subgraphSearch.witness };
+      }
+
+      return subgraphSearch.completed
+        ? { text: "No" }
+        : { text: "Search too large for exact subgraph test" };
+    }
+
+    function countDefinitionNonEdges(definition) {
+      return (definition.vertexCount * (definition.vertexCount - 1)) / 2 - (definition.edgePairs || []).length;
+    }
+
+    function hasInducedSubgraphEmbedding(hostDefinition, targetDefinition) {
+      const hostAdjacencyList = definitionToAdjacencyList(hostDefinition);
+      const targetAdjacencyList = definitionToAdjacencyList(targetDefinition);
+      const hostAdjacencySets = hostAdjacencyList.map((neighbors) => new Set(neighbors));
+      const targetAdjacencySets = targetAdjacencyList.map((neighbors) => new Set(neighbors));
+      const order = targetAdjacencyList
+        .map((neighbors, vertex) => ({
+          vertex,
+          degree: neighbors.length,
+          nonDegree: targetDefinition.vertexCount - 1 - neighbors.length
+        }))
+        .sort((a, b) => b.degree - a.degree || b.nonDegree - a.nonDegree)
+        .map((item) => item.vertex);
+      const mapping = Array(targetDefinition.vertexCount).fill(-1);
+      const usedHostVertices = new Set();
+      const stepLimit = 300000;
+      let steps = 0;
+      let aborted = false;
+
+      function candidateCanRespectMappedPairs(targetVertex, hostVertex) {
+        for (let position = 0; position < order.length; position += 1) {
+          const otherTarget = order[position];
+          const otherHost = mapping[otherTarget];
+
+          if (otherHost === -1) {
+            continue;
+          }
+
+          if (targetAdjacencySets[targetVertex].has(otherTarget) !== hostAdjacencySets[hostVertex].has(otherHost)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      function search(position) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return false;
+        }
+
+        if (position === order.length) {
+          return true;
+        }
+
+        const targetVertex = order[position];
+        const targetDegree = targetAdjacencyList[targetVertex].length;
+        const targetNonDegree = targetDefinition.vertexCount - 1 - targetDegree;
+        const candidates = hostAdjacencyList
+          .map((neighbors, hostVertex) => ({
+            hostVertex,
+            degree: neighbors.length,
+            nonDegree: hostDefinition.vertexCount - 1 - neighbors.length
+          }))
+          .filter((item) => (
+            !usedHostVertices.has(item.hostVertex) &&
+            item.degree >= targetDegree &&
+            item.nonDegree >= targetNonDegree
+          ))
+          .sort((a, b) => a.degree - b.degree || a.nonDegree - b.nonDegree);
+
+        for (const candidate of candidates) {
+          if (!candidateCanRespectMappedPairs(targetVertex, candidate.hostVertex)) {
+            continue;
+          }
+
+          mapping[targetVertex] = candidate.hostVertex;
+          usedHostVertices.add(candidate.hostVertex);
+
+          if (search(position + 1)) {
+            return true;
+          }
+
+          mapping[targetVertex] = -1;
+          usedHostVertices.delete(candidate.hostVertex);
+
+          if (aborted) {
+            return false;
+          }
+        }
+
+        return false;
+      }
+
+      const found = search(0);
+      return {
+        completed: !aborted,
+        found,
+        witness: found
+          ? {
+            type: "induced-subgraph",
+            mapping: mapping.slice(),
+            branchSets: mapping.map((hostIndex) => [hostIndex])
+          }
+          : null
+      };
+    }
+
+    function getInducedSubgraphContainmentResult(hostDefinition, targetDefinition) {
+      if (targetDefinition.vertexCount === 0) {
+        return {
+          text: "Yes",
+          witness: {
+            type: "trivial",
+            description: "The empty graph is an induced subgraph of every graph."
+          }
+        };
+      }
+
+      if (hostDefinition.vertexCount === 0 || targetDefinition.vertexCount > hostDefinition.vertexCount) {
+        return { text: "No" };
+      }
+
+      if ((targetDefinition.edgePairs || []).length > (hostDefinition.edgePairs || []).length) {
+        return { text: "No" };
+      }
+
+      if (countDefinitionNonEdges(targetDefinition) > countDefinitionNonEdges(hostDefinition)) {
+        return { text: "No" };
+      }
+
+      const inducedSearch = hasInducedSubgraphEmbedding(hostDefinition, targetDefinition);
+      if (inducedSearch.found) {
+        return { text: "Yes", witness: inducedSearch.witness };
+      }
+
+      return inducedSearch.completed
+        ? { text: "No" }
+        : { text: "Search too large for exact induced subgraph test" };
+    }
+
+    function makeSubdivisionWitnessFromMapping(mapping, targetDefinition) {
+      return {
+        type: "subdivision",
+        branchMapping: mapping.slice(),
+        paths: getDefinitionEdgePairs(targetDefinition).map((edge) => ({
+          targetFrom: edge.from,
+          targetTo: edge.to,
+          hostPath: [mapping[edge.from], mapping[edge.to]]
+        }))
+      };
+    }
+
+    function runExactSubdivisionSearch(hostDefinition, targetDefinition) {
+      const hostVertexCount = hostDefinition.vertexCount;
+      const targetVertexCount = targetDefinition.vertexCount;
+      const hostAdjacencyList = definitionToAdjacencyList(hostDefinition);
+      const targetAdjacencyList = definitionToAdjacencyList(targetDefinition);
+      const targetEdges = getDefinitionEdgePairs(targetDefinition)
+        .sort((a, b) => (
+          targetAdjacencyList[b.from].length + targetAdjacencyList[b.to].length -
+          targetAdjacencyList[a.from].length - targetAdjacencyList[a.to].length
+        ));
+      const branchOrder = targetAdjacencyList
+        .map((neighbors, vertex) => ({ vertex, degree: neighbors.length }))
+        .sort((a, b) => b.degree - a.degree)
+        .map((item) => item.vertex);
+      const mapping = Array(targetVertexCount).fill(-1);
+      const usedBranchVertices = new Set();
+      const usedInternalVertices = new Set();
+      const chosenPaths = [];
+      const stepLimit = 700000;
+      let steps = 0;
+      let aborted = false;
+
+      function searchPaths(edgeIndex) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return false;
+        }
+
+        if (edgeIndex === targetEdges.length) {
+          return true;
+        }
+
+        const targetEdge = targetEdges[edgeIndex];
+        const start = mapping[targetEdge.from];
+        const end = mapping[targetEdge.to];
+        const path = [start];
+        const localVisited = new Set([start]);
+
+        function dfs(current) {
+          steps += 1;
+          if (steps > stepLimit) {
+            aborted = true;
+            return false;
+          }
+
+          if (current === end) {
+            const internalVertices = path.slice(1, -1);
+            for (const vertex of internalVertices) {
+              usedInternalVertices.add(vertex);
+            }
+
+            chosenPaths.push({
+              targetFrom: targetEdge.from,
+              targetTo: targetEdge.to,
+              hostPath: path.slice()
+            });
+
+            if (searchPaths(edgeIndex + 1)) {
+              return true;
+            }
+
+            chosenPaths.pop();
+            for (const vertex of internalVertices) {
+              usedInternalVertices.delete(vertex);
+            }
+
+            return false;
+          }
+
+          for (const next of hostAdjacencyList[current]) {
+            if (next === end) {
+              path.push(next);
+              if (dfs(next)) {
+                return true;
+              }
+              path.pop();
+
+              if (aborted) {
+                return false;
+              }
+              continue;
+            }
+
+            if (
+              localVisited.has(next) ||
+              usedBranchVertices.has(next) ||
+              usedInternalVertices.has(next)
+            ) {
+              continue;
+            }
+
+            localVisited.add(next);
+            path.push(next);
+            if (dfs(next)) {
+              return true;
+            }
+            path.pop();
+            localVisited.delete(next);
+
+            if (aborted) {
+              return false;
+            }
+          }
+
+          return false;
+        }
+
+        return dfs(start);
+      }
+
+      function searchBranches(position) {
+        steps += 1;
+        if (steps > stepLimit) {
+          aborted = true;
+          return false;
+        }
+
+        if (position === branchOrder.length) {
+          return searchPaths(0);
+        }
+
+        const targetVertex = branchOrder[position];
+        const targetDegree = targetAdjacencyList[targetVertex].length;
+        const candidates = hostAdjacencyList
+          .map((neighbors, hostVertex) => ({ hostVertex, degree: neighbors.length }))
+          .filter((item) => !usedBranchVertices.has(item.hostVertex) && item.degree >= targetDegree)
+          .sort((a, b) => a.degree - b.degree);
+
+        for (const candidate of candidates) {
+          mapping[targetVertex] = candidate.hostVertex;
+          usedBranchVertices.add(candidate.hostVertex);
+
+          if (searchBranches(position + 1)) {
+            return true;
+          }
+
+          mapping[targetVertex] = -1;
+          usedBranchVertices.delete(candidate.hostVertex);
+
+          if (aborted) {
+            return false;
+          }
+        }
+
+        return false;
+      }
+
+      const found = searchBranches(0);
+      return {
+        completed: !aborted,
+        found,
+        witness: found
+          ? {
+            type: "subdivision",
+            branchMapping: mapping.slice(),
+            paths: chosenPaths.slice()
+          }
+          : null
+      };
+    }
+
+    function getSubdivisionContainmentResult(hostDefinition, targetDefinition) {
+      if (targetDefinition.vertexCount === 0) {
+        return {
+          text: "Yes",
+          witness: {
+            type: "trivial",
+            description: "The empty graph has a subdivision in every graph."
+          }
+        };
+      }
+
+      if (hostDefinition.vertexCount === 0 || targetDefinition.vertexCount > hostDefinition.vertexCount) {
+        return { text: "No" };
+      }
+
+      if ((targetDefinition.edgePairs || []).length > (hostDefinition.edgePairs || []).length) {
+        return { text: "No" };
+      }
+
+      const hostAdjacencyList = definitionToAdjacencyList(hostDefinition);
+      const targetAdjacencyList = definitionToAdjacencyList(targetDefinition);
+      const hostMaxDegree = hostAdjacencyList.length ? Math.max(...hostAdjacencyList.map((neighbors) => neighbors.length)) : 0;
+      const targetMaxDegree = targetAdjacencyList.length ? Math.max(...targetAdjacencyList.map((neighbors) => neighbors.length)) : 0;
+      if (targetMaxDegree > hostMaxDegree) {
+        return { text: "No" };
+      }
+
+      const subgraphSearch = hasSubgraphEmbedding(hostDefinition, targetDefinition);
+      if (subgraphSearch.found) {
+        return {
+          text: "Yes",
+          witness: makeSubdivisionWitnessFromMapping(subgraphSearch.witness.mapping, targetDefinition)
+        };
+      }
+
+      if (
+        hostDefinition.vertexCount > 18 ||
+        targetDefinition.vertexCount > 9 ||
+        (targetDefinition.edgePairs || []).length > 12
+      ) {
+        return { text: "Search too large for exact subdivision test" };
+      }
+
+      const exactSearch = runExactSubdivisionSearch(hostDefinition, targetDefinition);
+      if (exactSearch.found) {
+        return { text: "Yes", witness: exactSearch.witness };
+      }
+
+      return exactSearch.completed
+        ? { text: "No" }
+        : { text: "Search too large for exact subdivision test" };
+    }
+
     function getMinorContainmentResult(hostDefinition, targetDefinition) {
       if (targetDefinition.vertexCount === 0) {
         return {
@@ -1827,6 +2221,38 @@
       }
 
       return { text: "Search too large for exact minor test" };
+    }
+
+    function getContainmentModeLabel(mode) {
+      if (mode === "subdivision") {
+        return "subdivision";
+      }
+
+      if (mode === "induced-subgraph") {
+        return "induced subgraph";
+      }
+
+      if (mode === "subgraph") {
+        return "subgraph";
+      }
+
+      return "minor";
+    }
+
+    function getContainmentResult(mode, hostDefinition, targetDefinition) {
+      if (mode === "subdivision") {
+        return getSubdivisionContainmentResult(hostDefinition, targetDefinition);
+      }
+
+      if (mode === "induced-subgraph") {
+        return getInducedSubgraphContainmentResult(hostDefinition, targetDefinition);
+      }
+
+      if (mode === "subgraph") {
+        return getSubgraphContainmentResult(hostDefinition, targetDefinition);
+      }
+
+      return getMinorContainmentResult(hostDefinition, targetDefinition);
     }
 
     function getDefinitionVertexLabel(definition, index) {
@@ -1885,6 +2311,30 @@
         return ` Witness as subgraph: ${mappings.join("; ")}.${formatMinorEdgeWitnesses(result, hostDefinition, targetDefinition)}`;
       }
 
+      if (result.witness.type === "induced-subgraph") {
+        const mappings = result.witness.mapping.map((hostIndex, targetIndex) => (
+          `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${getDefinitionVertexLabel(hostDefinition, hostIndex)}`
+        ));
+
+        return ` Witness as induced subgraph: ${mappings.join("; ")}. Non-edges are preserved.`;
+      }
+
+      if (result.witness.type === "subdivision") {
+        const branchMappings = result.witness.branchMapping.map((hostIndex, targetIndex) => (
+          `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${getDefinitionVertexLabel(hostDefinition, hostIndex)}`
+        ));
+        const pathWitnesses = result.witness.paths.map((path) => {
+          const targetEdgeLabel = [
+            getDefinitionVertexLabel(targetDefinition, path.targetFrom),
+            getDefinitionVertexLabel(targetDefinition, path.targetTo)
+          ].join("-");
+          const hostPathLabel = path.hostPath.map((hostIndex) => getDefinitionVertexLabel(hostDefinition, hostIndex)).join("-");
+          return `${targetEdgeLabel} by ${hostPathLabel}`;
+        });
+
+        return ` Witness subdivision: branch vertices ${branchMappings.join("; ")}.${pathWitnesses.length ? ` Path witnesses: ${pathWitnesses.join("; ")}.` : ""}`;
+      }
+
       if (result.witness.type === "branch-sets") {
         const branchSets = result.witness.branchSets.map((hostIndices, targetIndex) => (
           `${getDefinitionVertexLabel(targetDefinition, targetIndex)} → ${formatHostVertexSet(hostDefinition, hostIndices)}`
@@ -1898,6 +2348,7 @@
 
     function runFindMinor() {
       minorQuery = minorQuery.trim();
+      const modeLabel = getContainmentModeLabel(containmentMode);
 
       if (!minorQuery) {
         minorResultText = "Enter a target graph first, such as K5, C3, Petersen graph, or a saved graph name.";
@@ -1916,8 +2367,8 @@
       }
 
       const hostDefinition = makePlainDefinitionFromCurrentGraph(currentGraphName || "graph in view");
-      const result = getMinorContainmentResult(hostDefinition, targetDefinition);
-      minorResultText = `${targetDefinition.displayName} minor? ${result.text}.${formatMinorWitness(result, hostDefinition, targetDefinition)}`;
+      const result = getContainmentResult(containmentMode, hostDefinition, targetDefinition);
+      minorResultText = `${targetDefinition.displayName} ${modeLabel}? ${result.text}.${formatMinorWitness(result, hostDefinition, targetDefinition)}`;
       updateView();
     }
 
@@ -3129,8 +3580,14 @@
       )).join("")}</div>
       <div class="property-actions">
         <div class="minor-finder">
-          <label for="minorInput">Find minor</label>
-          <div class="minor-controls">
+          <label for="minorInput">Find containment</label>
+          <div class="minor-controls containment-controls">
+            <select id="containmentModeSelect" aria-label="Containment type">
+              <option value="minor"${containmentMode === "minor" ? " selected" : ""}>Minor</option>
+              <option value="subdivision"${containmentMode === "subdivision" ? " selected" : ""}>Subdivision</option>
+              <option value="induced-subgraph"${containmentMode === "induced-subgraph" ? " selected" : ""}>Induced subgraph</option>
+              <option value="subgraph"${containmentMode === "subgraph" ? " selected" : ""}>Subgraph</option>
+            </select>
             <input id="minorInput" type="text" value="${escapeHtml(minorQuery)}" placeholder="Examples: K5, C3, Petersen graph, G">
             <button id="findMinorBtn" type="button">Find</button>
           </div>
@@ -4718,20 +5175,25 @@
       return formatSpectrum(jacobiEigenvaluesSymmetric(buildAdjacencyMatrix()));
     }
 
-    function findMinorForTest(hostDescription, targetDescription) {
+    function findContainmentForTest(hostDescription, targetDescription, mode = "minor") {
       const hostDefinition = parseGraphDescription(hostDescription);
       const targetDefinition = parseGraphDescription(targetDescription);
       setGraphFromDefinition(hostDefinition, hostDefinition.displayName);
       updateView();
 
       const hostSnapshot = makePlainDefinitionFromCurrentGraph(hostDefinition.displayName);
-      const result = getMinorContainmentResult(hostSnapshot, targetDefinition);
+      const result = getContainmentResult(mode, hostSnapshot, targetDefinition);
       return {
         host: hostDefinition.displayName,
         target: targetDefinition.displayName,
+        mode,
         text: result.text,
         witness: formatMinorWitness(result, hostSnapshot, targetDefinition).trim()
       };
+    }
+
+    function findMinorForTest(hostDescription, targetDescription) {
+      return findContainmentForTest(hostDescription, targetDescription, "minor");
     }
 
     function clearGraphForTest() {
@@ -4742,6 +5204,7 @@
 
     window.MiniGraphExplorerTestAPI = {
       clearGraph: clearGraphForTest,
+      findContainment: findContainmentForTest,
       findMinor: findMinorForTest,
       getGraphSnapshot: getGraphSnapshotForTest,
       getParameters: getParameterValuesForTest,
@@ -4840,10 +5303,17 @@
         minorQuery = event.target.value;
       }
     });
+    propertyBox.addEventListener("change", (event) => {
+      if (event.target && event.target.id === "containmentModeSelect") {
+        containmentMode = event.target.value;
+      }
+    });
     propertyBox.addEventListener("click", (event) => {
       if (event.target && event.target.id === "findMinorBtn") {
         const input = document.getElementById("minorInput");
         minorQuery = input ? input.value : minorQuery;
+        const modeSelect = document.getElementById("containmentModeSelect");
+        containmentMode = modeSelect ? modeSelect.value : containmentMode;
         runFindMinor();
       }
 

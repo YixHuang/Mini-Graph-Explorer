@@ -88,7 +88,8 @@
     }
 
     input,
-    textarea {
+    textarea,
+    select {
       width: 100%;
       padding: 0.55rem 0.7rem;
       border: 1px solid var(--line);
@@ -97,6 +98,10 @@
       color: var(--ink);
       font: inherit;
       margin-bottom: 0.55rem;
+    }
+
+    select {
+      min-height: 2.45rem;
     }
 
     textarea {
@@ -558,8 +563,13 @@
     }
 
     .minor-controls input,
+    .minor-controls select,
     .minor-controls button {
       margin-bottom: 0;
+    }
+
+    .containment-controls {
+      grid-template-columns: minmax(130px, 0.7fr) minmax(140px, 1fr) 88px;
     }
 
     .spectrum-controls {
@@ -701,6 +711,7 @@
 
       .top-tools,
       .description-row,
+      .containment-controls,
       .property-actions {
         grid-template-columns: 1fr;
       }

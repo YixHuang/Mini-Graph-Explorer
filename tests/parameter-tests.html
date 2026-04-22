@@ -314,6 +314,77 @@
       }
     ];
 
+    const containmentCases = [
+      {
+        name: "C4 contains P3 subgraph",
+        host: "C4",
+        target: "P3",
+        mode: "subgraph",
+        expected: "Yes",
+        witnessIncludes: "Witness as subgraph"
+      },
+      {
+        name: "C4 does not contain K3 subgraph",
+        host: "C4",
+        target: "K3",
+        mode: "subgraph",
+        expected: "No"
+      },
+      {
+        name: "C4 contains P3 induced subgraph",
+        host: "C4",
+        target: "P3",
+        mode: "induced-subgraph",
+        expected: "Yes",
+        witnessIncludes: "Witness as induced subgraph"
+      },
+      {
+        name: "K3 does not contain P3 induced subgraph",
+        host: "K3",
+        target: "P3",
+        mode: "induced-subgraph",
+        expected: "No"
+      },
+      {
+        name: "K5 contains K4 induced subgraph",
+        host: "K5",
+        target: "K4",
+        mode: "induced-subgraph",
+        expected: "Yes",
+        witnessIncludes: "Witness as induced subgraph"
+      },
+      {
+        name: "C4 contains C3 subdivision",
+        host: "C4",
+        target: "C3",
+        mode: "subdivision",
+        expected: "Yes",
+        witnessIncludes: "Witness subdivision"
+      },
+      {
+        name: "P4 contains P3 subdivision",
+        host: "P4",
+        target: "P3",
+        mode: "subdivision",
+        expected: "Yes",
+        witnessIncludes: "Witness subdivision"
+      },
+      {
+        name: "P4 does not contain C3 subdivision",
+        host: "P4",
+        target: "C3",
+        mode: "subdivision",
+        expected: "No"
+      },
+      {
+        name: "C4 does not contain K4 subdivision",
+        host: "C4",
+        target: "K4",
+        mode: "subdivision",
+        expected: "No"
+      }
+    ];
+
     const parserCases = [
       {
         name: "K34 compact complete bipartite notation",
@@ -587,6 +658,22 @@
           total += 1;
           const hasWitnessText = result.witness.includes(testCase.witnessIncludes) ? testCase.witnessIncludes : result.witness || "(empty)";
           if (addRow(testCase.name, "minor witness", testCase.witnessIncludes, hasWitnessText)) {
+            passed += 1;
+          }
+        }
+      }
+
+      for (const testCase of containmentCases) {
+        const result = api.findContainment(testCase.host, testCase.target, testCase.mode);
+        total += 1;
+        if (addRow(testCase.name, `${testCase.mode} result`, testCase.expected, result.text)) {
+          passed += 1;
+        }
+
+        if (testCase.witnessIncludes) {
+          total += 1;
+          const hasWitnessText = result.witness.includes(testCase.witnessIncludes) ? testCase.witnessIncludes : result.witness || "(empty)";
+          if (addRow(testCase.name, `${testCase.mode} witness`, testCase.witnessIncludes, hasWitnessText)) {
             passed += 1;
           }
         }

@@ -167,11 +167,19 @@ The empty graph returns `N/A` for both. A disconnected graph returns `Infinity` 
 
 ## Click-to-Compute Parameters
 
-### Find Minor
+### Find Containment
 
-Function: `runFindMinor()`, using `getMinorContainmentResult()`.
+Function: `runFindMinor()`, dispatching through `getContainmentResult()`.
 
-The target graph is parsed using the same graph-description parser as the main graph input, including saved graph names. The empty target graph is always a minor. If the host graph is empty, if the target has more vertices than the host, or if the target has more edges than the host, the code returns `No`.
+The target graph is parsed using the same graph-description parser as the main graph input, including saved graph names. The selector supports four modes: minor, subdivision, induced subgraph, and subgraph.
+
+In subgraph mode, the code searches for an injective vertex map that preserves every target edge. Extra host edges among the chosen vertices are allowed. The search is exact when it finishes; if it exceeds its step limit, the result is `Search too large for exact subgraph test`.
+
+In induced subgraph mode, the code searches for an injective vertex map that preserves both edges and non-edges: every target vertex pair is adjacent exactly when the mapped host pair is adjacent. The search is exact when it finishes; if it exceeds its step limit, the result is `Search too large for exact induced subgraph test`.
+
+In subdivision mode, the code searches for a topological copy of the target: target vertices map injectively to branch vertices of the host, and target edges map to host paths whose internal vertices are pairwise disjoint and are not branch vertices. Direct edges are allowed as length-1 paths. If the graph is beyond the exact search limits, the result is `Search too large for exact subdivision test`.
+
+In minor mode, the empty target graph is always a minor. If the host graph is empty, if the target has more vertices than the host, or if the target has more edges than the host, the code returns `No`.
 
 The code first searches for the target as a subgraph. If found, it returns `Yes` with a vertex mapping and edge witnesses. If not, it compares treewidth bounds; if the target lower bound is larger than the host upper bound, it returns `No`.
 
