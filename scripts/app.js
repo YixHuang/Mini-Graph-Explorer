@@ -177,11 +177,15 @@
         "cycle",
         "path",
         "complete",
+        "comp",
+        "complement",
         "empty",
         "line",
         "line graph",
+        "power",
         "petersen",
         "petersen graph",
+        "square",
         "multipartite"
       ]);
 
@@ -3673,10 +3677,10 @@
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
-      ctx.strokeStyle = edge.kind === "operation" || edge.kind === "complement"
+      ctx.strokeStyle = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power"
         ? hexToRgba(edgeColor, 0.42)
         : edgeColor;
-      ctx.lineWidth = edge.kind === "operation" || edge.kind === "complement" ? 1.5 : 3;
+      ctx.lineWidth = edge.kind === "operation" || edge.kind === "complement" || edge.kind === "power" ? 1.5 : 3;
       ctx.lineCap = "round";
       ctx.stroke();
     }
@@ -3885,6 +3889,12 @@
       </div>`;
     }
 
+    function getConstructionHint() {
+      return currentGraphMeta && currentGraphMeta.constructionHint
+        ? currentGraphMeta.constructionHint
+        : "";
+    }
+
     function renderList() {
       const nodeText = nodes.length ? nodes.map((node) => node.label).join(", ") : "(none)";
       const neighborMap = new Map(nodes.map((node) => [node.label, []]));
@@ -3907,6 +3917,9 @@
         : "(none)";
 
       listBox.textContent = `Graph: ${currentGraphName}\nVertices: ${nodeText}\nNeighbors:\n${neighborText}\nVertex labels shown: ${showLabels ? "yes" : "no"}\nVertex size: ${physics.nodeRadius}px`;
+      const constructionHint = getConstructionHint();
+      listBox.title = constructionHint;
+      graphCanvas.title = constructionHint;
       undoBtn.disabled = undoStack.length === 0;
       redoBtn.disabled = redoStack.length === 0;
     }
@@ -4029,19 +4042,24 @@
         description: "Associative Cartesian product; accepts two or more graph descriptions."
       },
       {
-        pattern: "complement of C5, complement graph of Petersen graph",
-        example: "complement of C5",
+        pattern: "C5^c, comp(C5), complement of C5, complement graph of Petersen graph",
+        example: "C5^c",
         description: "Complement graph on the same vertex set."
       },
       {
-        pattern: "L(G), L(K5), line graph of G, line graph of Petersen graph",
-        example: "L(K5)",
-        description: "Line graph L(G): one vertex for each edge of G, with adjacent vertices for incident edges."
+        pattern: "L(G), L^2(G), L(K5), line graph of G, line graph of Petersen graph",
+        example: "L^2(P4)",
+        description: "Line graph L(G): one vertex for each edge of G; L^2(G) means apply the line graph twice."
+      },
+      {
+        pattern: "square of G, Power(G, 3), Power(3, G), 3rd power of G",
+        example: "Power(C5, 2)",
+        description: "Graph power G^k: connect vertices whose distance in G is at most k."
       },
       {
         pattern: "Saved graph names: G, H, myGraph",
         example: "join of G and C5",
-        description: "Save the current graph, then reuse its name in joins, products, and complements."
+        description: "Save the current graph, then reuse its name in joins, products, complements, line graphs, and powers."
       }
     ];
 
@@ -4811,14 +4829,21 @@
         }
       }
 
-      return makeDefinition(
+      const definition = makeDefinition(
         baseDefinition.vertexCount,
         edgePairs,
         `complement of ${baseDefinition.displayName}`,
         fallbackPositions(baseDefinition),
         "standard",
-        { type: "complement", base: baseDefinition.meta || { type: "custom" } }
+        {
+          type: "complement",
+          base: baseDefinition.meta || { type: "custom" },
+          constructionHint: `Complement of ${baseDefinition.displayName}: keep the vertices and use exactly the nonedges of the original graph.`
+        }
       );
+
+      definition.labels = Array.from({ length: baseDefinition.vertexCount }, (_, index) => getDefinitionVertexLabel(baseDefinition, index));
+      return definition;
     }
 
     function lineGraphVertexLabel(baseDefinition, baseEdge, index) {
@@ -4890,11 +4915,209 @@
         `line graph of ${baseDefinition.displayName}`,
         lineGraphPositions(baseDefinition),
         "standard",
-        { type: "line", base: baseDefinition.meta || { type: "custom" }, baseEdgeCount: baseEdges.length }
+        {
+          type: "line",
+          base: baseDefinition.meta || { type: "custom" },
+          baseEdgeCount: baseEdges.length,
+          constructionHint: `Line graph of ${baseDefinition.displayName}: vertices are edges of the original graph, and adjacency means the original edges share an endpoint.`
+        }
       );
 
       definition.labels = baseEdges.map((edge, index) => lineGraphVertexLabel(baseDefinition, edge, index));
       return definition;
+    }
+
+    function ordinalSuffix(value) {
+      const mod100 = value % 100;
+
+      if (mod100 >= 11 && mod100 <= 13) {
+        return "th";
+      }
+
+      const mod10 = value % 10;
+      if (mod10 === 1) {
+        return "st";
+      }
+
+      if (mod10 === 2) {
+        return "nd";
+      }
+
+      if (mod10 === 3) {
+        return "rd";
+      }
+
+      return "th";
+    }
+
+    function ordinalName(value) {
+      return `${value}${ordinalSuffix(value)}`;
+    }
+
+    function powerDisplayName(baseDefinition, exponent) {
+      if (exponent === 2) {
+        return `square of ${baseDefinition.displayName}`;
+      }
+
+      return `${ordinalName(exponent)} power of ${baseDefinition.displayName}`;
+    }
+
+    function graphPowerDefinition(baseDefinition, exponent) {
+      if (!Number.isInteger(exponent) || exponent < 1) {
+        throw new Error("Graph powers need a positive integer exponent.");
+      }
+
+      const adjacencyList = definitionToAdjacencyList(baseDefinition);
+      const edgePairs = [];
+
+      for (let start = 0; start < baseDefinition.vertexCount; start += 1) {
+        const distances = Array(baseDefinition.vertexCount).fill(Infinity);
+        const queue = [start];
+        distances[start] = 0;
+
+        for (let head = 0; head < queue.length; head += 1) {
+          const current = queue[head];
+
+          if (distances[current] >= exponent) {
+            continue;
+          }
+
+          for (const next of adjacencyList[current] || []) {
+            if (distances[next] !== Infinity) {
+              continue;
+            }
+
+            distances[next] = distances[current] + 1;
+            queue.push(next);
+          }
+        }
+
+        for (let end = start + 1; end < baseDefinition.vertexCount; end += 1) {
+          if (distances[end] <= exponent) {
+            addUniqueEdge(edgePairs, start, end, distances[end] === 1 ? "normal" : "power");
+          }
+        }
+      }
+
+      const definition = makeDefinition(
+        baseDefinition.vertexCount,
+        edgePairs,
+        powerDisplayName(baseDefinition, exponent),
+        fallbackPositions(baseDefinition),
+        "standard",
+        {
+          type: "power",
+          exponent,
+          base: baseDefinition.meta || { type: "custom" },
+          constructionHint: `${ordinalName(exponent)} power of ${baseDefinition.displayName}: connect every pair of vertices whose distance in the original graph is at most ${exponent}.`
+        }
+      );
+
+      definition.labels = Array.from({ length: baseDefinition.vertexCount }, (_, index) => getDefinitionVertexLabel(baseDefinition, index));
+      return definition;
+    }
+
+    function parsePowerCount(text) {
+      const cleanText = text.trim().toLowerCase();
+      const ordinalWords = {
+        first: 1,
+        second: 2,
+        third: 3,
+        fourth: 4,
+        fifth: 5,
+        sixth: 6,
+        seventh: 7,
+        eighth: 8,
+        ninth: 9,
+        tenth: 10,
+        eleventh: 11,
+        twelfth: 12,
+        thirteenth: 13,
+        fourteenth: 14,
+        fifteenth: 15,
+        sixteenth: 16,
+        seventeenth: 17,
+        eighteenth: 18,
+        nineteenth: 19,
+        twentieth: 20
+      };
+      const numericMatch = cleanText.match(/^(\d+)(?:st|nd|rd|th)?$/);
+      const value = numericMatch ? Number(numericMatch[1]) : parseSmallNumber(cleanText) || ordinalWords[cleanText];
+
+      if (!Number.isInteger(value) || value < 1 || value > maxGeneratedVertices) {
+        return null;
+      }
+
+      return value;
+    }
+
+    function splitTopLevelCommaCandidates(text) {
+      const pairs = [];
+      let depth = 0;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+
+        if (character === "(") {
+          depth += 1;
+        } else if (character === ")") {
+          depth = Math.max(0, depth - 1);
+        } else if (character === "," && depth === 0) {
+          pairs.push([
+            text.slice(0, index).trim(),
+            text.slice(index + 1).trim()
+          ]);
+        }
+      }
+
+      return pairs.filter(([left, right]) => left && right);
+    }
+
+    function tryPowerDefinition(graphText, exponentText) {
+      const exponent = parsePowerCount(exponentText);
+
+      if (!exponent) {
+        return null;
+      }
+
+      return graphPowerDefinition(parseGraphPhrase(graphText), exponent);
+    }
+
+    function parsePowerFunctionArguments(text) {
+      for (const [left, right] of splitTopLevelCommaCandidates(text)) {
+        try {
+          const leftGraph = tryPowerDefinition(left, right);
+          if (leftGraph) {
+            return leftGraph;
+          }
+        } catch (error) {
+          // Try the other argument order before reporting a Power(...) syntax error.
+        }
+
+        try {
+          const rightGraph = tryPowerDefinition(right, left);
+          if (rightGraph) {
+            return rightGraph;
+          }
+        } catch (error) {
+          // Keep trying other top-level comma splits; K_{m,n} also contains a comma.
+        }
+      }
+
+      throw new Error("Power(...) needs one graph description and one positive integer, such as Power(G, 3) or Power(3, G).");
+    }
+
+    function iteratedLineGraphDefinition(baseDefinition, iterations) {
+      if (!Number.isInteger(iterations) || iterations < 1) {
+        throw new Error("Line graph iteration needs a positive integer, such as L^2(G).");
+      }
+
+      let currentDefinition = baseDefinition;
+      for (let index = 0; index < iterations; index += 1) {
+        currentDefinition = lineGraphDefinition(currentDefinition);
+      }
+
+      return currentDefinition;
     }
 
     function splitAssociativeOperands(text) {
@@ -4942,7 +5165,13 @@
       const lineGraphPrefix = "line graph of ";
       const compactPhrase = phrase.replace(/\s+/g, "");
       let compactMatch = compactPhrase.match(/^([cpqw])_?(\d+)$/);
-      const lineNotationMatch = phrase.match(/^l\s*\((.+)\)$/);
+      const complementFunctionMatch = phrase.match(/^comp(?:lement)?\s*\((.+)\)$/);
+      const powerFunctionMatch = phrase.match(/^power\s*\((.+)\)$/);
+      const squareMatch = phrase.match(/^square of (.+)$/);
+      const cubeMatch = phrase.match(/^cube of (.+)$/);
+      const powerPhraseMatch = phrase.match(/^(.+) power of (.+)$/);
+      const lineNotationMatch = phrase.match(/^l(?:\^([a-z0-9]+))?\s*\((.+)\)$/);
+      const complementSuffixMatch = phrase.match(/^(.+)\^c$/);
 
       for (const prefix of complementPrefixes) {
         if (phrase.startsWith(prefix)) {
@@ -4950,12 +5179,40 @@
         }
       }
 
+      if (complementFunctionMatch) {
+        return complementDefinition(parseGraphPhrase(complementFunctionMatch[1]));
+      }
+
+      if (powerFunctionMatch) {
+        return parsePowerFunctionArguments(powerFunctionMatch[1]);
+      }
+
+      if (squareMatch) {
+        return graphPowerDefinition(parseGraphPhrase(squareMatch[1]), 2);
+      }
+
+      if (cubeMatch) {
+        return graphPowerDefinition(parseGraphPhrase(cubeMatch[1]), 3);
+      }
+
+      if (powerPhraseMatch) {
+        const exponent = parsePowerCount(powerPhraseMatch[1]);
+
+        if (exponent) {
+          return graphPowerDefinition(parseGraphPhrase(powerPhraseMatch[2]), exponent);
+        }
+      }
+
       if (lineNotationMatch) {
-        return lineGraphDefinition(parseGraphPhrase(lineNotationMatch[1]));
+        return iteratedLineGraphDefinition(parseGraphPhrase(lineNotationMatch[2]), parsePowerCount(lineNotationMatch[1] || "1"));
       }
 
       if (phrase.startsWith(lineGraphPrefix)) {
         return lineGraphDefinition(parseGraphPhrase(phrase.slice(lineGraphPrefix.length)));
+      }
+
+      if (complementSuffixMatch) {
+        return complementDefinition(parseGraphPhrase(complementSuffixMatch[1]));
       }
 
       const savedDefinition = getSavedGraphDefinition(phrase);
@@ -5167,7 +5424,7 @@
         return makeEmptyDefinition(parseVertexCount(match[1], 3));
       }
 
-      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, line graph of K5, or Cartesian product of cycle on 4 vertices and path on 3 vertices.");
+      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, L^2(K5), square of C5, or Power(G, 3).");
     }
 
     function parseGraphDescription(text) {
@@ -5506,6 +5763,7 @@
         name: currentGraphName,
         vertexCount: nodes.length,
         edgeCount: edges.length,
+        constructionHint: getConstructionHint(),
         vertices: nodes.map((node) => node.label),
         edges: edges.map((edge) => ({ from: edge.from, to: edge.to })),
         parameters: getParameterValuesForTest()
@@ -5523,7 +5781,8 @@
       return {
         name: definition.displayName,
         vertexCount: definition.vertexCount,
-        edgeCount: (definition.edgePairs || []).length
+        edgeCount: (definition.edgePairs || []).length,
+        constructionHint: definition.meta && definition.meta.constructionHint ? definition.meta.constructionHint : ""
       };
     }
 

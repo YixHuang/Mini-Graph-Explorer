@@ -432,12 +432,40 @@
         }
       },
       {
+        name: "Complement function shorthand parser",
+        description: "comp(C5)",
+        expected: {
+          name: "complement of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
+        name: "Complement suffix shorthand parser",
+        description: "C5^c",
+        expected: {
+          name: "complement of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
         name: "Line graph of cycle parser",
         description: "line graph of C5",
         expected: {
           name: "line graph of C_5",
           vertexCount: "5",
-          edgeCount: "5"
+          edgeCount: "5",
+          constructionHint: "Line graph of C_5: vertices are edges of the original graph, and adjacency means the original edges share an endpoint."
+        }
+      },
+      {
+        name: "Iterated line graph parser",
+        description: "L^2(P4)",
+        expected: {
+          name: "line graph of line graph of P_4",
+          vertexCount: "2",
+          edgeCount: "1"
         }
       },
       {
@@ -474,6 +502,51 @@
           name: "line graph of P_4",
           vertexCount: "3",
           edgeCount: "2"
+        }
+      },
+      {
+        name: "Graph square natural parser",
+        description: "square of C5",
+        expected: {
+          name: "square of C_5",
+          vertexCount: "5",
+          edgeCount: "10"
+        }
+      },
+      {
+        name: "Graph power graph-first parser",
+        description: "Power(P5, 2)",
+        expected: {
+          name: "square of P_5",
+          vertexCount: "5",
+          edgeCount: "7"
+        }
+      },
+      {
+        name: "Graph power complete bipartite parser",
+        description: "Power(K_{3,4}, 2)",
+        expected: {
+          name: "square of K_{3,4}",
+          vertexCount: "7",
+          edgeCount: "21"
+        }
+      },
+      {
+        name: "Graph power exponent-first parser",
+        description: "Power(3, P4)",
+        expected: {
+          name: "3rd power of P_4",
+          vertexCount: "4",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Graph power ordinal parser",
+        description: "3rd power of P4",
+        expected: {
+          name: "3rd power of P_4",
+          vertexCount: "4",
+          edgeCount: "6"
         }
       },
       {
