@@ -548,6 +548,32 @@
       margin: 0;
     }
 
+    .graph-view-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .readme-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.35rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid rgba(30, 111, 92, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .readme-link:hover {
+      background: rgba(217, 239, 232, 0.78);
+    }
+
     .list {
       background: #f9f5ee;
       border: 1px dashed var(--line);
