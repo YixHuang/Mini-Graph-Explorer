@@ -3326,7 +3326,7 @@
       ];
 
       propertyBox.innerHTML = `<div class="property-grid">${properties.map(([name, value, hint]) => (
-        `<div class="property-card"><span class="property-name">${name}<span class="parameter-help" tabindex="0" role="button" aria-label="${escapeHtml(hint)}" data-tooltip="${escapeHtml(hint)}">?</span></span><strong>${value}</strong></div>`
+        `<div class="property-card"><span class="property-name">${name}<span class="parameter-help" tabindex="0" role="button" title="${escapeHtml(hint)}" aria-label="${escapeHtml(hint)}" data-tooltip="${escapeHtml(hint)}">?</span></span><strong>${value}</strong></div>`
       )).join("")}</div>
       <div class="property-actions">
         <div class="minor-finder">
