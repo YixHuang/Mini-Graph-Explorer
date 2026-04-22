@@ -196,6 +196,121 @@
           diameter: "2",
           radius: "2"
         }
+      },
+      {
+        name: "K5",
+        description: "K5",
+        expected: {
+          vertexCount: "5",
+          edgeCount: "10",
+          connected: "Yes",
+          vertexConnectivity: "4",
+          edgeConnectivity: "4",
+          toughness: "Infinity",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "No",
+          genus: "1",
+          treewidth: "4",
+          independenceNumber: "1",
+          chromaticNumber: "5",
+          chromaticIndex: "5",
+          girth: "3",
+          diameter: "1",
+          radius: "1"
+        }
+      },
+      {
+        name: "K_{2,3}",
+        description: "K_{2,3}",
+        expected: {
+          vertexCount: "5",
+          edgeCount: "6",
+          connected: "Yes",
+          vertexConnectivity: "2",
+          edgeConnectivity: "2",
+          toughness: "2/3",
+          hamiltonian: "No",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "2",
+          independenceNumber: "3",
+          chromaticNumber: "2",
+          chromaticIndex: "3",
+          girth: "4",
+          diameter: "2",
+          radius: "2"
+        }
+      },
+      {
+        name: "Petersen graph",
+        description: "Petersen graph",
+        expected: {
+          vertexCount: "10",
+          edgeCount: "15",
+          connected: "Yes",
+          vertexConnectivity: "3",
+          edgeConnectivity: "3",
+          toughness: "4/3",
+          hamiltonian: "No",
+          traceable: "Yes",
+          planar: "No",
+          genus: "1",
+          treewidth: "4",
+          independenceNumber: "4",
+          chromaticNumber: "3",
+          chromaticIndex: "4",
+          girth: "5",
+          diameter: "2",
+          radius: "2"
+        }
+      },
+      {
+        name: "Q3",
+        description: "Q3",
+        expected: {
+          vertexCount: "8",
+          edgeCount: "12",
+          connected: "Yes",
+          vertexConnectivity: "3",
+          edgeConnectivity: "3",
+          toughness: "1",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "3",
+          independenceNumber: "4",
+          chromaticNumber: "2",
+          chromaticIndex: "3",
+          girth: "4",
+          diameter: "3",
+          radius: "3"
+        }
+      }
+    ];
+
+    const minorCases = [
+      {
+        name: "Petersen contains K_{3,3} minor",
+        host: "Petersen graph",
+        target: "K_{3,3}",
+        expected: "Yes",
+        witnessIncludes: "Witness branch sets"
+      },
+      {
+        name: "C4 does not contain K4 minor",
+        host: "C4",
+        target: "K4",
+        expected: "No"
+      },
+      {
+        name: "K5 contains K4 minor",
+        host: "K5",
+        target: "K4",
+        expected: "Yes",
+        witnessIncludes: "Witness as subgraph"
       }
     ];
 
@@ -258,6 +373,22 @@
           const actual = getActual(snapshot, key);
           total += 1;
           if (addRow(testCase.name, key, expected, actual)) {
+            passed += 1;
+          }
+        }
+      }
+
+      for (const testCase of minorCases) {
+        const result = api.findMinor(testCase.host, testCase.target);
+        total += 1;
+        if (addRow(testCase.name, "minor result", testCase.expected, result.text)) {
+          passed += 1;
+        }
+
+        if (testCase.witnessIncludes) {
+          total += 1;
+          const hasWitnessText = result.witness.includes(testCase.witnessIncludes) ? testCase.witnessIncludes : result.witness || "(empty)";
+          if (addRow(testCase.name, "minor witness", testCase.witnessIncludes, hasWitnessText)) {
             passed += 1;
           }
         }

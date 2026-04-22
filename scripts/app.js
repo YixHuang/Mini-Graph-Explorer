@@ -4896,6 +4896,22 @@
       return getGraphSnapshotForTest();
     }
 
+    function findMinorForTest(hostDescription, targetDescription) {
+      const hostDefinition = parseGraphDescription(hostDescription);
+      const targetDefinition = parseGraphDescription(targetDescription);
+      setGraphFromDefinition(hostDefinition, hostDefinition.displayName);
+      updateView();
+
+      const hostSnapshot = makePlainDefinitionFromCurrentGraph(hostDefinition.displayName);
+      const result = getMinorContainmentResult(hostSnapshot, targetDefinition);
+      return {
+        host: hostDefinition.displayName,
+        target: targetDefinition.displayName,
+        text: result.text,
+        witness: formatMinorWitness(result, hostSnapshot, targetDefinition).trim()
+      };
+    }
+
     function clearGraphForTest() {
       clearGraphData();
       updateView();
@@ -4904,6 +4920,7 @@
 
     window.MiniGraphExplorerTestAPI = {
       clearGraph: clearGraphForTest,
+      findMinor: findMinorForTest,
       getGraphSnapshot: getGraphSnapshotForTest,
       getParameters: getParameterValuesForTest,
       loadGraph: loadGraphForTest

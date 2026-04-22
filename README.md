@@ -13,7 +13,7 @@ This README is written to make the displayed graph parameters easy to audit agai
 
 ## Running Checks
 
-Open `tests/parameter-tests.html` in a browser. The test page loads the real explorer in a hidden iframe, uses `window.MiniGraphExplorerTestAPI`, and checks selected parameter values for standard graphs such as `K3`, `P3`, `C4`, and `K_{3,3}`.
+Open `tests/parameter-tests.html` in a browser. The test page loads the real explorer in a hidden iframe, uses `window.MiniGraphExplorerTestAPI`, and checks selected parameter values for standard graphs such as `K3`, `P3`, `C4`, `K5`, `K_{3,3}`, Petersen graph, and `Q3`. It also includes a few minor-containment checks with witness expectations.
 
 ## Shared Conventions
 
