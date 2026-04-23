@@ -681,12 +681,111 @@
         }
       },
       {
+        name: "Join function parser",
+        description: "Join(C3, P4)",
+        expected: {
+          name: "join of C_3, P_4",
+          vertexCount: "7",
+          edgeCount: "18"
+        }
+      },
+      {
+        name: "Lowercase join function parser",
+        description: "join(C3,P4)",
+        expected: {
+          name: "join of C_3, P_4",
+          vertexCount: "7",
+          edgeCount: "18"
+        }
+      },
+      {
+        name: "Join function preserves complete bipartite comma",
+        description: "Join(K_{3,4}, C5)",
+        expected: {
+          name: "join of K_{3,4}, C_5",
+          vertexCount: "12",
+          edgeCount: "52"
+        }
+      },
+      {
         name: "Cartesian product parser",
         description: "Cartesian product of C4 and P3",
         expected: {
           name: "Cartesian product of C_4, P_3",
           vertexCount: "12",
           edgeCount: "20"
+        }
+      },
+      {
+        name: "CartesianProduct function parser",
+        description: "CartesianProduct(C4, P3)",
+        expected: {
+          name: "Cartesian product of C_4, P_3",
+          vertexCount: "12",
+          edgeCount: "20"
+        }
+      },
+      {
+        name: "Cartesian product function with three arguments",
+        description: "cartesianProduct(C3, K4, K2)",
+        expected: {
+          name: "Cartesian product of C_3, K_4, K_2",
+          vertexCount: "24",
+          edgeCount: "72"
+        }
+      },
+      {
+        name: "DisjointUnion function parser",
+        description: "DisjointUnion(P3, C4)",
+        expected: {
+          name: "disjoint union of P_3, C_4",
+          vertexCount: "7",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Union function parser",
+        description: "union(P3, C4)",
+        expected: {
+          name: "disjoint union of P_3, C_4",
+          vertexCount: "7",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Complement function parser",
+        description: "Complement(C5)",
+        expected: {
+          name: "complement of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
+        name: "LineGraph function parser",
+        description: "LineGraph(C5)",
+        expected: {
+          name: "line graph of C_5",
+          vertexCount: "5",
+          edgeCount: "5"
+        }
+      },
+      {
+        name: "TotalGraph function parser",
+        description: "TotalGraph(P3)",
+        expected: {
+          name: "total graph of P_3",
+          vertexCount: "5",
+          edgeCount: "7"
+        }
+      },
+      {
+        name: "SubdivisionGraph function parser",
+        description: "SubdivisionGraph(P3)",
+        expected: {
+          name: "subdivision graph of P_3",
+          vertexCount: "5",
+          edgeCount: "4"
         }
       },
       {

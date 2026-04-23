@@ -4172,8 +4172,8 @@
         description: "Disjoint union of multiple copies of a complete graph."
       },
       {
-        pattern: "G + H, P3 + C4, G, H",
-        example: "P3 + C4",
+        pattern: "G + H, P3 + C4, G, H, DisjointUnion(G,H), union(G,H)",
+        example: "DisjointUnion(P3, C4)",
         description: "Disjoint union of two or more graph descriptions."
       },
       {
@@ -4192,23 +4192,23 @@
         description: "The standard Petersen graph."
       },
       {
-        pattern: "join of C3 and P4",
-        example: "join of C3 and P4",
+        pattern: "join of C3 and P4, Join(C3, P4), join(C3,P4)",
+        example: "Join(C3, P4)",
         description: "Join operation: keep both graphs and add all cross edges."
       },
       {
-        pattern: "Cartesian product of C4 and P3; Cartesian product of C3, K4 and K2",
-        example: "Cartesian product of C3, K4 and K2",
+        pattern: "Cartesian product of C4 and P3; CartesianProduct(C3, K4, K2)",
+        example: "CartesianProduct(C3, K4, K2)",
         description: "Associative Cartesian product; accepts two or more graph descriptions."
       },
       {
-        pattern: "C5^c, comp(C5), complement of C5, complement graph of Petersen graph",
-        example: "C5^c",
+        pattern: "C5^c, comp(C5), Complement(C5), complement graph of Petersen graph",
+        example: "Complement(C5)",
         description: "Complement graph on the same vertex set."
       },
       {
-        pattern: "L(G), L^2(G), L(K5), line graph of G, line graph of Petersen graph",
-        example: "L^2(P4)",
+        pattern: "L(G), L^2(G), L(K5), LineGraph(G), line graph of Petersen graph",
+        example: "LineGraph(C5)",
         description: "Line graph L(G): one vertex for each edge of G; L^2(G) means apply the line graph twice."
       },
       {
@@ -4217,13 +4217,13 @@
         description: "Graph power G^k: connect vertices whose distance in G is at most k."
       },
       {
-        pattern: "total graph of G, T(G)",
-        example: "total graph of C4",
+        pattern: "total graph of G, T(G), TotalGraph(G)",
+        example: "TotalGraph(C4)",
         description: "Total graph T(G): vertices and edges of G become vertices; adjacency means adjacent or incident in G."
       },
       {
-        pattern: "subdivision graph of G, S(G)",
-        example: "subdivision graph of C4",
+        pattern: "subdivision graph of G, S(G), SubdivisionGraph(G)",
+        example: "SubdivisionGraph(C4)",
         description: "Subdivision graph: insert one new vertex into every edge of G."
       },
       {
@@ -5534,6 +5534,78 @@
       return parts.length > 1 ? parts : [];
     }
 
+    function splitTopLevelFunctionArguments(text) {
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+
+        if (character === "(") {
+          depth += 1;
+          continue;
+        }
+
+        if (character === ")") {
+          depth = Math.max(0, depth - 1);
+          continue;
+        }
+
+        if (character !== "," || depth !== 0) {
+          continue;
+        }
+
+        const rest = text.slice(index + 1).trimStart();
+        const commaStartsGraphDescription = /^[a-z]/.test(rest) || /^\d+\s*k/.test(rest);
+        if (!commaStartsGraphDescription) {
+          continue;
+        }
+
+        const part = text.slice(start, index).trim();
+        if (part) {
+          parts.push(part);
+        }
+        start = index + 1;
+      }
+
+      const finalPart = text.slice(start).trim();
+      if (finalPart) {
+        parts.push(finalPart);
+      }
+
+      return parts;
+    }
+
+    function parseFunctionCall(phrase) {
+      const match = phrase.match(/^([a-z][a-z\s_-]*?)\s*\(([\s\S]+)\)$/);
+      if (!match) {
+        return null;
+      }
+
+      return {
+        name: match[1].replace(/[\s_-]+/g, ""),
+        argumentsText: match[2].trim()
+      };
+    }
+
+    function parseUnaryFunctionArgument(functionName, argumentsText) {
+      const parts = splitTopLevelFunctionArguments(argumentsText);
+      if (parts.length !== 1) {
+        throw new Error(`${functionName}(...) needs exactly one graph description.`);
+      }
+
+      return parseGraphPhrase(parts[0]);
+    }
+
+    function parseFunctionGraphOperation(argumentsText, operationName, operation) {
+      return foldGraphOperation(
+        splitTopLevelFunctionArguments(argumentsText),
+        operationName,
+        operation
+      );
+    }
+
     function parseDisjointUnionParts(parts) {
       return disjointUnionDefinition(parts.map((part) => parseGraphPhrase(part)));
     }
@@ -5680,6 +5752,7 @@
       const lineNotationMatch = phrase.match(/^l(?:\^([a-z0-9]+))?\s*\((.+)\)$/);
       const complementSuffixMatch = phrase.match(/^(.+)\^c$/);
       const powerSuffixMatch = phrase.match(/^(.+)\^(\d+)$/);
+      const functionCall = parseFunctionCall(phrase);
 
       for (const prefix of complementPrefixes) {
         if (phrase.startsWith(prefix)) {
@@ -5697,6 +5770,39 @@
 
       if (distanceFunctionMatch) {
         return parseDistanceFunctionArguments(distanceFunctionMatch[1]);
+      }
+
+      if (functionCall) {
+        const name = functionCall.name;
+        const argumentsText = functionCall.argumentsText;
+
+        if (name === "join") {
+          return parseFunctionGraphOperation(argumentsText, "Join", joinDefinitions);
+        }
+
+        if (name === "cartesian" || name === "cartesianproduct") {
+          return parseFunctionGraphOperation(argumentsText, "Cartesian product", cartesianProductDefinitions);
+        }
+
+        if (name === "disjointunion" || name === "union") {
+          return disjointUnionDefinition(splitTopLevelFunctionArguments(argumentsText).map((part) => parseGraphPhrase(part)));
+        }
+
+        if (name === "complement" || name === "comp") {
+          return complementDefinition(parseUnaryFunctionArgument("Complement", argumentsText));
+        }
+
+        if (name === "line" || name === "linegraph") {
+          return lineGraphDefinition(parseUnaryFunctionArgument("LineGraph", argumentsText));
+        }
+
+        if (name === "total" || name === "totalgraph" || name === "t") {
+          return totalGraphDefinition(parseUnaryFunctionArgument("TotalGraph", argumentsText));
+        }
+
+        if (name === "subdivision" || name === "subdivisiongraph" || name === "s") {
+          return subdivisionGraphDefinition(parseUnaryFunctionArgument("SubdivisionGraph", argumentsText));
+        }
       }
 
       if (totalFunctionMatch) {
