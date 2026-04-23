@@ -4172,7 +4172,7 @@
         description: "Disjoint union of multiple copies of a complete graph."
       },
       {
-        pattern: "G + H, P3 + C4, G, H, DisjointUnion(G,H), union(G,H)",
+        pattern: "G + H, G, H, G; H, P3 + C4, DisjointUnion(G,H), union(G,H)",
         example: "DisjointUnion(P3, C4)",
         description: "Disjoint union of two or more graph descriptions."
       },
@@ -4261,7 +4261,7 @@
     function normalizeDescription(text) {
       const cleaned = text
         .toLowerCase()
-        .replace(/[{}.;:!?]/g, " ")
+        .replace(/[{}.:!?]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -5515,7 +5515,7 @@
 
         const rest = text.slice(index + 1).trimStart();
         const commaStartsGraphDescription = character === "," && (/^[a-z]/.test(rest) || /^\d+\s*k/.test(rest));
-        if (character !== "+" && !commaStartsGraphDescription) {
+        if (character !== "+" && character !== ";" && !commaStartsGraphDescription) {
           continue;
         }
 
