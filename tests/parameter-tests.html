@@ -651,6 +651,34 @@
         }
       },
       {
+        name: "2-subdivision natural parser",
+        description: "2-subdivision of C4",
+        expected: {
+          name: "2-subdivision of C_4",
+          vertexCount: "12",
+          edgeCount: "12",
+          constructionHint: "2-subdivision of C_4: replace every original edge by a path of 3 edges."
+        }
+      },
+      {
+        name: "2 subdivision graph natural parser",
+        description: "2 subdivision graph of P3",
+        expected: {
+          name: "2-subdivision of P_3",
+          vertexCount: "7",
+          edgeCount: "6"
+        }
+      },
+      {
+        name: "Subdivision graph at parser",
+        description: "subdivision graph of C3 at 3",
+        expected: {
+          name: "3-subdivision of C_3",
+          vertexCount: "12",
+          edgeCount: "12"
+        }
+      },
+      {
         name: "Distance graph parser",
         description: "Distance(P5, 2)",
         expected: {
@@ -795,6 +823,33 @@
           name: "subdivision graph of P_3",
           vertexCount: "5",
           edgeCount: "4"
+        }
+      },
+      {
+        name: "SubdivisionGraph function with count parser",
+        description: "SubdivisionGraph(C4, 2)",
+        expected: {
+          name: "2-subdivision of C_4",
+          vertexCount: "12",
+          edgeCount: "12"
+        }
+      },
+      {
+        name: "SubdivisionGraph count-first parser",
+        description: "SubdivisionGraph(2, C4)",
+        expected: {
+          name: "2-subdivision of C_4",
+          vertexCount: "12",
+          edgeCount: "12"
+        }
+      },
+      {
+        name: "S shorthand with count parser",
+        description: "S(C4, 2)",
+        expected: {
+          name: "2-subdivision of C_4",
+          vertexCount: "12",
+          edgeCount: "12"
         }
       },
       {

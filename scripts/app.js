@@ -4222,9 +4222,9 @@
         description: "Total graph T(G): vertices and edges of G become vertices; adjacency means adjacent or incident in G."
       },
       {
-        pattern: "subdivision graph of G, S(G), SubdivisionGraph(G)",
-        example: "SubdivisionGraph(C4)",
-        description: "Subdivision graph: insert one new vertex into every edge of G."
+        pattern: "subdivision graph of G, 2-subdivision of G, S(G), SubdivisionGraph(G, 2)",
+        example: "SubdivisionGraph(C4, 2)",
+        description: "k-subdivision: replace each edge by a path of k+1 edges; default k=1."
       },
       {
         pattern: "distance 2 graph of G, Distance(G, 2), Distance(2, G)",
@@ -5213,6 +5213,23 @@
       ];
     }
 
+    function subdivisionGraphLabels(baseDefinition, subdivisionCount) {
+      const originalLabels = baseVertexLabels(baseDefinition);
+      const usedLabels = new Set(originalLabels);
+      const labels = [...originalLabels];
+
+      for (const edge of baseDefinition.edgePairs || []) {
+        const fromLabel = getDefinitionVertexLabel(baseDefinition, edge.from);
+        const toLabel = getDefinitionVertexLabel(baseDefinition, edge.to);
+
+        for (let index = 1; index <= subdivisionCount; index += 1) {
+          labels.push(uniqueGeneratedLabel(`${fromLabel}${toLabel}_${index}`, usedLabels, "s", labels.length));
+        }
+      }
+
+      return labels;
+    }
+
     function mixedVertexPositions(baseDefinition) {
       return [
         ...fallbackPositions(baseDefinition),
@@ -5220,32 +5237,69 @@
       ];
     }
 
-    function subdivisionGraphDefinition(baseDefinition) {
+    function subdivisionGraphPositions(baseDefinition, subdivisionCount) {
+      const positions = fallbackPositions(baseDefinition).map((position) => ({ ...position }));
+      const basePositions = fallbackPositions(baseDefinition);
+
+      for (const edge of baseDefinition.edgePairs || []) {
+        const from = basePositions[edge.from];
+        const to = basePositions[edge.to];
+
+        for (let index = 1; index <= subdivisionCount; index += 1) {
+          const ratio = index / (subdivisionCount + 1);
+          positions.push({
+            x: from.x + (to.x - from.x) * ratio,
+            y: from.y + (to.y - from.y) * ratio
+          });
+        }
+      }
+
+      return positions;
+    }
+
+    function subdivisionGraphDefinition(baseDefinition, subdivisionCount = 1) {
+      if (!Number.isInteger(subdivisionCount) || subdivisionCount < 1) {
+        throw new Error("Subdivision graphs need a positive integer subdivision count.");
+      }
+
       const baseEdges = baseDefinition.edgePairs || [];
       const offset = baseDefinition.vertexCount;
       const edgePairs = [];
+      let nextSubdivisionVertex = offset;
 
-      baseEdges.forEach((edge, index) => {
-        const edgeVertex = offset + index;
-        addUniqueEdge(edgePairs, edge.from, edgeVertex, "subdivision");
-        addUniqueEdge(edgePairs, edgeVertex, edge.to, "subdivision");
+      baseEdges.forEach((edge) => {
+        let previousVertex = edge.from;
+
+        for (let index = 0; index < subdivisionCount; index += 1) {
+          const subdivisionVertex = nextSubdivisionVertex;
+          nextSubdivisionVertex += 1;
+          addUniqueEdge(edgePairs, previousVertex, subdivisionVertex, "subdivision");
+          previousVertex = subdivisionVertex;
+        }
+
+        addUniqueEdge(edgePairs, previousVertex, edge.to, "subdivision");
       });
 
       const definition = makeDefinition(
-        baseDefinition.vertexCount + baseEdges.length,
+        baseDefinition.vertexCount + baseEdges.length * subdivisionCount,
         edgePairs,
-        `subdivision graph of ${baseDefinition.displayName}`,
-        mixedVertexPositions(baseDefinition),
+        subdivisionCount === 1
+          ? `subdivision graph of ${baseDefinition.displayName}`
+          : `${subdivisionCount}-subdivision of ${baseDefinition.displayName}`,
+        subdivisionGraphPositions(baseDefinition, subdivisionCount),
         "standard",
         {
           type: "subdivision-graph",
+          subdivisionCount,
           base: baseDefinition.meta || { type: "custom" },
           baseEdgeCount: baseEdges.length,
-          constructionHint: `Subdivision graph of ${baseDefinition.displayName}: insert one new vertex into every original edge.`
+          constructionHint: subdivisionCount === 1
+            ? `Subdivision graph of ${baseDefinition.displayName}: insert one new vertex into every original edge.`
+            : `${subdivisionCount}-subdivision of ${baseDefinition.displayName}: replace every original edge by a path of ${subdivisionCount + 1} edges.`
         }
       );
 
-      definition.labels = mixedGraphLabels(baseDefinition);
+      definition.labels = subdivisionGraphLabels(baseDefinition, subdivisionCount);
       return definition;
     }
 
@@ -5678,6 +5732,51 @@
       throw new Error("Distance(...) needs one graph description and one positive integer, such as Distance(G, 2) or Distance(2, G).");
     }
 
+    function trySubdivisionDefinition(graphText, subdivisionText) {
+      const subdivisionCount = parsePowerCount(subdivisionText);
+
+      if (!subdivisionCount) {
+        return null;
+      }
+
+      return subdivisionGraphDefinition(parseGraphPhrase(graphText), subdivisionCount);
+    }
+
+    function parseSubdivisionFunctionArguments(text) {
+      let sawPair = false;
+      for (const [left, right] of splitTopLevelCommaCandidates(text)) {
+        sawPair = true;
+        try {
+          const leftGraph = trySubdivisionDefinition(left, right);
+          if (leftGraph) {
+            return leftGraph;
+          }
+        } catch (error) {
+          // Try the other argument order before reporting a SubdivisionGraph(...) syntax error.
+        }
+
+        try {
+          const rightGraph = trySubdivisionDefinition(right, left);
+          if (rightGraph) {
+            return rightGraph;
+          }
+        } catch (error) {
+          // Keep trying other top-level comma splits; K_{m,n} also contains a comma.
+        }
+      }
+
+      const parts = splitTopLevelFunctionArguments(text);
+      if (parts.length === 1) {
+        return subdivisionGraphDefinition(parseGraphPhrase(parts[0]));
+      }
+
+      if (!sawPair) {
+        throw new Error("SubdivisionGraph(...) needs one graph description, or one graph and one positive integer.");
+      }
+
+      throw new Error("SubdivisionGraph(...) needs a graph and optional positive integer, such as SubdivisionGraph(G, 2) or SubdivisionGraph(2, G).");
+    }
+
     function iteratedLineGraphDefinition(baseDefinition, iterations) {
       if (!Number.isInteger(iterations) || iterations < 1) {
         throw new Error("Line graph iteration needs a positive integer, such as L^2(G).");
@@ -5749,6 +5848,8 @@
       const powerPhraseMatch = phrase.match(/^(.+) power of (.+)$/);
       const distancePhraseMatch = phrase.match(/^distance\s+([a-z0-9]+)\s+graph of (.+)$/);
       const distanceAtPhraseMatch = phrase.match(/^distance graph of (.+) at ([a-z0-9]+)$/);
+      const subdivisionCountPhraseMatch = phrase.match(/^([a-z0-9]+)\s*[- ]subdivision(?: graph)? of (.+)$/);
+      const subdivisionAtPhraseMatch = phrase.match(/^subdivision graph of (.+) at ([a-z0-9]+)$/);
       const lineNotationMatch = phrase.match(/^l(?:\^([a-z0-9]+))?\s*\((.+)\)$/);
       const complementSuffixMatch = phrase.match(/^(.+)\^c$/);
       const powerSuffixMatch = phrase.match(/^(.+)\^(\d+)$/);
@@ -5801,7 +5902,7 @@
         }
 
         if (name === "subdivision" || name === "subdivisiongraph" || name === "s") {
-          return subdivisionGraphDefinition(parseUnaryFunctionArgument("SubdivisionGraph", argumentsText));
+          return parseSubdivisionFunctionArguments(argumentsText);
         }
       }
 
@@ -5810,7 +5911,7 @@
       }
 
       if (subdivisionFunctionMatch) {
-        return subdivisionGraphDefinition(parseGraphPhrase(subdivisionFunctionMatch[1]));
+        return parseSubdivisionFunctionArguments(subdivisionFunctionMatch[1]);
       }
 
       if (squareMatch) {
@@ -5842,6 +5943,22 @@
 
         if (distanceValue) {
           return distanceGraphDefinition(parseGraphPhrase(distanceAtPhraseMatch[1]), distanceValue);
+        }
+      }
+
+      if (subdivisionCountPhraseMatch) {
+        const subdivisionCount = parsePowerCount(subdivisionCountPhraseMatch[1]);
+
+        if (subdivisionCount) {
+          return subdivisionGraphDefinition(parseGraphPhrase(subdivisionCountPhraseMatch[2]), subdivisionCount);
+        }
+      }
+
+      if (subdivisionAtPhraseMatch) {
+        const subdivisionCount = parsePowerCount(subdivisionAtPhraseMatch[2]);
+
+        if (subdivisionCount) {
+          return subdivisionGraphDefinition(parseGraphPhrase(subdivisionAtPhraseMatch[1]), subdivisionCount);
         }
       }
 
