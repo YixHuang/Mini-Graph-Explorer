@@ -4424,6 +4424,11 @@
         description: "Distance-k graph: connect vertices whose distance in G is exactly k."
       },
       {
+        pattern: "Tree(1,1,1,3), Graph(2,2,2,2)",
+        example: "Graph(2,2,2,2)",
+        description: "Construct one tree or simple graph with the given degree sequence, if such a graph exists."
+      },
+      {
         pattern: "Saved graph names: G, H, myGraph",
         example: "join of G and C5",
         description: "Save the current graph, then reuse its name in joins, products, complements, line graphs, and powers."
@@ -4535,6 +4540,95 @@
           y: centerY + radius * Math.sin(angle)
         };
       });
+    }
+
+    function buildAdjacencyListFromEdgePairs(vertexCount, edgePairs) {
+      const adjacencyList = Array.from({ length: vertexCount }, () => []);
+
+      for (const edge of edgePairs) {
+        if (
+          !edge ||
+          edge.from === edge.to ||
+          edge.from < 0 ||
+          edge.to < 0 ||
+          edge.from >= vertexCount ||
+          edge.to >= vertexCount
+        ) {
+          continue;
+        }
+
+        adjacencyList[edge.from].push(edge.to);
+        adjacencyList[edge.to].push(edge.from);
+      }
+
+      return adjacencyList.map((neighbors) => [...new Set(neighbors)].sort((first, second) => first - second));
+    }
+
+    function treePositionsFromEdgePairs(vertexCount, edgePairs) {
+      if (vertexCount <= 1) {
+        return circlePositions(Math.max(1, vertexCount), 0);
+      }
+
+      const adjacencyList = buildAdjacencyListFromEdgePairs(vertexCount, edgePairs);
+      const degrees = adjacencyList.map((neighbors) => neighbors.length);
+      const root = degrees
+        .map((degree, index) => ({ degree, index }))
+        .sort((first, second) => second.degree - first.degree || first.index - second.index)[0].index;
+      const parent = Array(vertexCount).fill(-1);
+      const depth = Array(vertexCount).fill(-1);
+      const levels = [];
+      const queue = [root];
+      depth[root] = 0;
+
+      for (let head = 0; head < queue.length; head += 1) {
+        const current = queue[head];
+        const currentDepth = depth[current];
+
+        if (!levels[currentDepth]) {
+          levels[currentDepth] = [];
+        }
+        levels[currentDepth].push(current);
+
+        for (const next of adjacencyList[current]) {
+          if (depth[next] !== -1) {
+            continue;
+          }
+          parent[next] = current;
+          depth[next] = currentDepth + 1;
+          queue.push(next);
+        }
+      }
+
+      levels.forEach((level) => level.sort((first, second) => parent[first] - parent[second] || first - second));
+      const maxWidth = Math.max(...levels.map((level) => level.length));
+      const top = 90;
+      const bottom = graphCanvas.height - 90;
+      const left = 90;
+      const right = graphCanvas.width - 90;
+      const positions = Array.from({ length: vertexCount }, () => ({ x: graphCanvas.width / 2, y: graphCanvas.height / 2 }));
+
+      levels.forEach((level, levelIndex) => {
+        const y = levels.length === 1
+          ? graphCanvas.height / 2
+          : top + ((bottom - top) * levelIndex) / (levels.length - 1);
+        const span = maxWidth <= 1
+          ? 0
+          : ((right - left) * Math.max(0, level.length - 1)) / (maxWidth - 1);
+        const startX = graphCanvas.width / 2 - span / 2;
+
+        level.forEach((vertex, index) => {
+          const x = level.length === 1
+            ? graphCanvas.width / 2
+            : startX + (span * index) / (level.length - 1);
+
+          positions[vertex] = {
+            x,
+            y
+          };
+        });
+      });
+
+      return positions;
     }
 
     function linePositions(count) {
@@ -4840,6 +4934,201 @@
         layout,
         meta: definitionMeta
       };
+    }
+
+    function splitTopLevelCommaParts(text) {
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+
+        if (character === "(") {
+          depth += 1;
+          continue;
+        }
+
+        if (character === ")") {
+          depth = Math.max(0, depth - 1);
+          continue;
+        }
+
+        if (character !== "," || depth !== 0) {
+          continue;
+        }
+
+        const part = text.slice(start, index).trim();
+        if (part) {
+          parts.push(part);
+        }
+        start = index + 1;
+      }
+
+      const finalPart = text.slice(start).trim();
+      if (finalPart) {
+        parts.push(finalPart);
+      }
+
+      return parts;
+    }
+
+    function parseDegreeSequenceArguments(text, invalidMessage) {
+      const parts = splitTopLevelCommaParts(text);
+
+      if (!parts.length) {
+        throw new Error(invalidMessage);
+      }
+
+      const sequence = parts.map((part) => {
+        if (!/^\d+$/.test(part)) {
+          throw new Error(invalidMessage);
+        }
+
+        const value = Number(part);
+        if (!Number.isInteger(value) || value < 0) {
+          throw new Error(invalidMessage);
+        }
+
+        return value;
+      });
+
+      ensureGeneratedSize(sequence.length);
+      return sequence;
+    }
+
+    function formatDegreeSequenceDisplay(sequence, prefix) {
+      return `${prefix}(${sequence.join(",")})`;
+    }
+
+    function makeGraphDefinitionFromDegreeSequence(sequence) {
+      const vertexCount = sequence.length;
+
+      if (vertexCount === 0) {
+        throw new Error("invalid degree sequence for graphs");
+      }
+
+      const edgePairs = [];
+      const working = sequence.map((degree, index) => ({ degree, index }));
+
+      for (const degree of sequence) {
+        if (!Number.isInteger(degree) || degree < 0 || degree >= vertexCount) {
+          throw new Error("invalid degree sequence for graphs");
+        }
+      }
+
+      while (true) {
+        working.sort((first, second) => second.degree - first.degree || first.index - second.index);
+        if (working[0].degree === 0) {
+          break;
+        }
+
+        const current = working.shift();
+        if (!current || current.degree < 0 || current.degree > working.length) {
+          throw new Error("invalid degree sequence for graphs");
+        }
+
+        for (let index = 0; index < current.degree; index += 1) {
+          if (working[index].degree <= 0) {
+            throw new Error("invalid degree sequence for graphs");
+          }
+
+          addUniqueEdge(edgePairs, current.index, working[index].index);
+          working[index].degree -= 1;
+        }
+
+        current.degree = 0;
+        working.push(current);
+      }
+
+      return makeDefinition(
+        vertexCount,
+        edgePairs,
+        formatDegreeSequenceDisplay(sequence, "Graph"),
+        circlePositions(vertexCount, Math.min(190, 45 + vertexCount * 18)),
+        "standard",
+        {
+          type: "degree-sequence-graph",
+          degreeSequence: sequence.slice()
+        }
+      );
+    }
+
+    function makeTreeDefinitionFromDegreeSequence(sequence) {
+      const vertexCount = sequence.length;
+
+      if (vertexCount === 0) {
+        throw new Error("invalid degree sequence for trees");
+      }
+
+      if (vertexCount === 1) {
+        if (sequence[0] !== 0) {
+          throw new Error("invalid degree sequence for trees");
+        }
+
+        return makeDefinition(1, [], "Tree(0)", [{ x: graphCanvas.width / 2, y: graphCanvas.height / 2 }], "standard", {
+          type: "degree-sequence-tree",
+          degreeSequence: [0]
+        });
+      }
+
+      const totalDegree = sequence.reduce((sum, value) => sum + value, 0);
+      if (totalDegree !== 2 * (vertexCount - 1) || sequence.some((degree) => !Number.isInteger(degree) || degree < 1 || degree >= vertexCount)) {
+        throw new Error("invalid degree sequence for trees");
+      }
+
+      const pruferSequence = [];
+      sequence.forEach((degree, index) => {
+        for (let repeat = 0; repeat < degree - 1; repeat += 1) {
+          pruferSequence.push(index);
+        }
+      });
+
+      const degrees = sequence.slice();
+      const edgePairs = [];
+
+      for (const vertex of pruferSequence) {
+        let leaf = -1;
+        for (let index = 0; index < degrees.length; index += 1) {
+          if (degrees[index] === 1) {
+            leaf = index;
+            break;
+          }
+        }
+
+        if (leaf === -1) {
+          throw new Error("invalid degree sequence for trees");
+        }
+
+        addUniqueEdge(edgePairs, leaf, vertex);
+        degrees[leaf] -= 1;
+        degrees[vertex] -= 1;
+      }
+
+      const leaves = [];
+      for (let index = 0; index < degrees.length; index += 1) {
+        if (degrees[index] === 1) {
+          leaves.push(index);
+        }
+      }
+
+      if (leaves.length !== 2) {
+        throw new Error("invalid degree sequence for trees");
+      }
+
+      addUniqueEdge(edgePairs, leaves[0], leaves[1]);
+
+      return makeDefinition(
+        vertexCount,
+        edgePairs,
+        formatDegreeSequenceDisplay(sequence, "Tree"),
+        treePositionsFromEdgePairs(vertexCount, edgePairs),
+        "standard",
+        {
+          type: "degree-sequence-tree",
+          degreeSequence: sequence.slice()
+        }
+      );
     }
 
     function copyClusterPositions(baseDefinition, copies) {
@@ -6096,6 +6385,18 @@
         if (name === "subdivision" || name === "subdivisiongraph" || name === "s") {
           return parseSubdivisionFunctionArguments(argumentsText);
         }
+
+        if (name === "tree") {
+          return makeTreeDefinitionFromDegreeSequence(
+            parseDegreeSequenceArguments(argumentsText, "invalid degree sequence for trees")
+          );
+        }
+
+        if (name === "graph") {
+          return makeGraphDefinitionFromDegreeSequence(
+            parseDegreeSequenceArguments(argumentsText, "invalid degree sequence for graphs")
+          );
+        }
       }
 
       if (totalFunctionMatch) {
@@ -6392,7 +6693,7 @@
         return parseDisjointUnionParts(unionParts);
       }
 
-      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, P3 + C4, G, H, L^2(K5), or Power(G, 3).");
+      throw new Error("Try examples like: Petersen graph, cycle on 6 vertices, K 3 4, P3 + C4, Tree(1,1,1,3), Graph(2,2,2,2), or Power(G, 3).");
     }
 
     function parseGraphDescription(text) {
@@ -6760,6 +7061,15 @@
       return summarizeDefinitionForTest(parseGraphDescription(description));
     }
 
+    function parseGraphErrorForTest(description) {
+      try {
+        parseGraphDescription(description);
+        return "";
+      } catch (error) {
+        return error.message;
+      }
+    }
+
     function parseMatrixForTest(text) {
       return summarizeDefinitionForTest(makeDefinitionFromAdjacencyMatrix(parseAdjacencyMatrix(text)));
     }
@@ -6829,6 +7139,7 @@
       loadMatrix: loadMatrixForTest,
       mergeVertices: mergeVerticesForTest,
       parseGraph: parseGraphForTest,
+      parseGraphError: parseGraphErrorForTest,
       parseMatrix: parseMatrixForTest,
       spectrum: getSpectrumForTest,
       laplacianSpectrum(description) {

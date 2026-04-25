@@ -288,6 +288,44 @@
           diameter: "3",
           radius: "3"
         }
+      },
+      {
+        name: "Tree degree sequence",
+        description: "Tree(1,1,1,3)",
+        expected: {
+          vertexCount: "4",
+          edgeCount: "3",
+          connected: "Yes",
+          vertexConnectivity: "1",
+          edgeConnectivity: "1",
+          hamiltonian: "No",
+          traceable: "No",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "1",
+          girth: "Infinity",
+          diameter: "2",
+          radius: "1"
+        }
+      },
+      {
+        name: "Graph degree sequence",
+        description: "Graph(2,2,2,2)",
+        expected: {
+          vertexCount: "4",
+          edgeCount: "4",
+          connected: "Yes",
+          vertexConnectivity: "2",
+          edgeConnectivity: "2",
+          hamiltonian: "Yes",
+          traceable: "Yes",
+          planar: "Yes",
+          genus: "0",
+          treewidth: "2",
+          girth: "4",
+          diameter: "2",
+          radius: "2"
+        }
       }
     ];
 
@@ -860,6 +898,37 @@
           vertexCount: "8",
           edgeCount: "16"
         }
+      },
+      {
+        name: "Tree degree sequence parser",
+        description: "Tree(1,1,1,3)",
+        expected: {
+          name: "Tree(1,1,1,3)",
+          vertexCount: "4",
+          edgeCount: "3"
+        }
+      },
+      {
+        name: "Graph degree sequence parser",
+        description: "Graph(2,2,2,2)",
+        expected: {
+          name: "Graph(2,2,2,2)",
+          vertexCount: "4",
+          edgeCount: "4"
+        }
+      }
+    ];
+
+    const invalidParserCases = [
+      {
+        name: "Invalid tree degree sequence",
+        description: "Tree(1,1,1,1)",
+        expected: "invalid degree sequence for trees"
+      },
+      {
+        name: "Invalid graph degree sequence",
+        description: "Graph(3,3,1,1)",
+        expected: "invalid degree sequence for graphs"
       }
     ];
 
@@ -1078,6 +1147,14 @@
         const result = checkObject(testCase.name, parsed, testCase.expected);
         passed += result.passed;
         total += result.total;
+      }
+
+      for (const testCase of invalidParserCases) {
+        const actual = api.parseGraphError(testCase.description);
+        total += 1;
+        if (addRow(testCase.name, "parser error", testCase.expected, actual)) {
+          passed += 1;
+        }
       }
 
       for (const testCase of editCases) {
