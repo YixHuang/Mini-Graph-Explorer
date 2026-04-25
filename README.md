@@ -27,6 +27,62 @@ You can also open `tests/parameter-tests.html` in a browser. The test page loads
 
 The app is static. GitHub Actions deploys the repository root to GitHub Pages on pushes to `main`, so `index.html`, `styles/`, and `scripts/` are served without a build step.
 
+## Visitor Stats
+
+The visitor counter is optional, because GitHub Pages cannot maintain shared visit totals by itself. The frontend now includes a visitor panel with a total-visit card, a top-country list, and a small SVG world map. It expects a lightweight endpoint that returns aggregate counts.
+
+### Frontend Files
+
+- `scripts/visitor-stats-config.js`: small config file for the stats endpoint, site id, geo lookup URL, and optional preview `demoData`.
+- `assets/world-map.svg`: vendored world SVG used for the choropleth map.
+- `visitor-stats/google-apps-script/Code.gs`: minimal Google Apps Script backend template.
+
+### Endpoint Contract
+
+The browser calls the configured endpoint with a GET request like:
+
+```text
+...?action=hit&site=mini-graph-explorer&country=US&countryName=United%20States&session=...&path=/
+```
+
+The endpoint should respond with JSON in this shape:
+
+```json
+{
+  "ok": true,
+  "siteId": "mini-graph-explorer",
+  "totalVisits": 1234,
+  "countries": { "US": 420, "CN": 180, "GB": 65 },
+  "countryNames": {
+    "US": "United States",
+    "CN": "China",
+    "GB": "United Kingdom"
+  },
+  "updatedAt": "2026-04-24T18:20:00.000Z"
+}
+```
+
+### Included Google Apps Script Template
+
+`visitor-stats/google-apps-script/Code.gs` stores aggregates in `PropertiesService`:
+
+- total visits at `<siteId>:total`
+- per-country counts at `<siteId>:countries`
+- per-country display names at `<siteId>:countryNames`
+- last update time at `<siteId>:updatedAt`
+
+It also uses `CacheService` to suppress repeated counts from the same browser session for 20 minutes.
+
+### Setup Steps
+
+1. Create a standalone Google Apps Script project.
+2. Paste in `visitor-stats/google-apps-script/Code.gs`.
+3. Deploy it as a web app with access set to `Anyone`.
+4. Copy the deployment URL into `scripts/visitor-stats-config.js` as `endpoint`.
+5. Push the updated repo to GitHub Pages.
+
+The frontend uses `https://ipwho.is/` by default to estimate the visitor country code in the browser before sending the hit to the endpoint. If that lookup fails, the visit is recorded under `ZZ`.
+
 ## Shared Conventions
 
 - Graphs are simple undirected graphs.

@@ -38,6 +38,14 @@
     const listBox = document.getElementById("listBox");
     const graphCanvas = document.getElementById("graphCanvas");
     const ctx = graphCanvas.getContext("2d");
+    const visitorStatsPanel = document.getElementById("visitorStatsPanel");
+    const visitorStatsStatus = document.getElementById("visitorStatsStatus");
+    const visitorTotalValue = document.getElementById("visitorTotalValue");
+    const visitorTotalNote = document.getElementById("visitorTotalNote");
+    const visitorTopCountries = document.getElementById("visitorTopCountries");
+    const visitorMapContainer = document.getElementById("visitorMapContainer");
+    const visitorMapLegend = document.getElementById("visitorMapLegend");
+    const visitorMapHover = document.getElementById("visitorMapHover");
     const undoStack = [];
     const redoStack = [];
     const maxExactPropertyVertices = 30;
@@ -59,6 +67,13 @@
     let minorResultText = "";
     let spectrumResultText = "";
     let containmentHighlight = null;
+    const visitorStatsConfig = resolveVisitorStatsConfig();
+    const visitorStatsState = {
+      mapPromise: null,
+      mapSvg: null,
+      sessionId: loadOrCreateVisitorSessionId()
+    };
+    const visitorCountFormatter = new Intl.NumberFormat();
 
     const containmentPalette = [
       "#2563eb",
@@ -130,6 +145,72 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    function resolveVisitorStatsConfig() {
+      const configured = typeof window !== "undefined" && window.MiniGraphExplorerVisitorStatsConfig
+        ? window.MiniGraphExplorerVisitorStatsConfig
+        : {};
+      const topCountryCount = Number(configured.topCountryCount);
+
+      return {
+        endpoint: typeof configured.endpoint === "string" ? configured.endpoint.trim() : "",
+        siteId: typeof configured.siteId === "string" && configured.siteId.trim()
+          ? configured.siteId.trim()
+          : "mini-graph-explorer",
+        geoLookupUrl: typeof configured.geoLookupUrl === "string" && configured.geoLookupUrl.trim()
+          ? configured.geoLookupUrl.trim()
+          : "https://ipwho.is/",
+        mapAssetPath: typeof configured.mapAssetPath === "string" && configured.mapAssetPath.trim()
+          ? configured.mapAssetPath.trim()
+          : "assets/world-map.svg",
+        topCountryCount: Number.isFinite(topCountryCount)
+          ? Math.max(3, Math.min(12, Math.round(topCountryCount)))
+          : 8,
+        setupUrl: typeof configured.setupUrl === "string" && configured.setupUrl.trim()
+          ? configured.setupUrl.trim()
+          : "https://github.com/YixHuang/Mini-Graph-Explorer#visitor-stats",
+        demoData: configured.demoData && typeof configured.demoData === "object"
+          ? configured.demoData
+          : null
+      };
+    }
+
+    function loadOrCreateVisitorSessionId() {
+      const storageKey = "miniGraphExplorer.visitorSession";
+      const fallback = `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      try {
+        const existing = sessionStorage.getItem(storageKey);
+        if (existing) {
+          return existing;
+        }
+
+        const nextValue = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : fallback;
+        sessionStorage.setItem(storageKey, nextValue);
+        return nextValue;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function formatVisitorCount(value) {
+      return visitorCountFormatter.format(Math.max(0, Number(value) || 0));
+    }
+
+    function escapeCssIdentifier(value) {
+      if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+        return CSS.escape(value);
+      }
+
+      return String(value).replace(/[^A-Za-z0-9_-]/g, "\\$&");
+    }
+
+    function normalizeVisitorCountryCode(value) {
+      const code = String(value || "ZZ").trim().toUpperCase();
+      return /^[A-Z]{2}$/.test(code) ? code : "ZZ";
     }
 
     function loadSavedGraphs() {
@@ -4079,6 +4160,415 @@
       redoBtn.disabled = redoStack.length === 0;
     }
 
+    function setVisitorStatsStatus(message) {
+      if (visitorStatsStatus) {
+        visitorStatsStatus.textContent = message;
+      }
+    }
+
+    function setVisitorTopCountriesMarkup(markup) {
+      if (visitorTopCountries) {
+        visitorTopCountries.innerHTML = markup;
+      }
+    }
+
+    function setVisitorMapHover(message) {
+      if (visitorMapHover) {
+        visitorMapHover.textContent = message;
+      }
+    }
+
+    function formatVisitorUpdatedAt(value) {
+      if (!value) {
+        return "Live counter ready when the endpoint is configured.";
+      }
+
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime())
+        ? "Updated recently."
+        : `Updated ${parsed.toLocaleString()}.`;
+    }
+
+    function normalizeVisitorStatsPayload(payload) {
+      const countryCounts = new Map();
+      const countryNames = new Map();
+
+      if (payload && payload.countryNames && typeof payload.countryNames === "object") {
+        for (const [code, name] of Object.entries(payload.countryNames)) {
+          countryNames.set(normalizeVisitorCountryCode(code), String(name || "").trim() || normalizeVisitorCountryCode(code));
+        }
+      }
+
+      if (payload && payload.countries && !Array.isArray(payload.countries) && typeof payload.countries === "object") {
+        for (const [code, value] of Object.entries(payload.countries)) {
+          const normalizedCode = normalizeVisitorCountryCode(code);
+          const count = Math.max(0, Math.round(Number(value) || 0));
+          if (count > 0) {
+            countryCounts.set(normalizedCode, count);
+          }
+        }
+      }
+
+      const arraySources = [];
+      if (payload && Array.isArray(payload.countries)) {
+        arraySources.push(...payload.countries);
+      }
+      if (payload && Array.isArray(payload.countryCounts)) {
+        arraySources.push(...payload.countryCounts);
+      }
+
+      for (const entry of arraySources) {
+        if (!entry || typeof entry !== "object") {
+          continue;
+        }
+
+        const normalizedCode = normalizeVisitorCountryCode(entry.code || entry.country || entry.countryCode);
+        const count = Math.max(0, Math.round(Number(entry.count ?? entry.visits ?? entry.value) || 0));
+        if (count <= 0) {
+          continue;
+        }
+
+        countryCounts.set(normalizedCode, count);
+        if (entry.name || entry.countryName) {
+          countryNames.set(normalizedCode, String(entry.name || entry.countryName).trim());
+        }
+      }
+
+      const countries = Array.from(countryCounts.entries())
+        .map(([code, count]) => ({
+          code,
+          name: countryNames.get(code) || code,
+          count
+        }))
+        .sort((first, second) => second.count - first.count || first.name.localeCompare(second.name));
+
+      const summedTotal = countries.reduce((sum, item) => sum + item.count, 0);
+      const payloadTotal = Math.max(0, Math.round(Number(payload && (payload.totalVisits ?? payload.total)) || 0));
+
+      return {
+        totalVisits: payloadTotal || summedTotal,
+        countries,
+        updatedAt: payload && payload.updatedAt ? String(payload.updatedAt) : ""
+      };
+    }
+
+    async function fetchJsonWithTimeout(url, timeoutMs = 8000) {
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      let timer = null;
+
+      try {
+        if (controller) {
+          timer = setTimeout(() => controller.abort(), timeoutMs);
+        }
+
+        const response = await fetch(url, {
+          cache: "no-store",
+          signal: controller ? controller.signal : undefined
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with ${response.status}.`);
+        }
+
+        return await response.json();
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      }
+    }
+
+    async function loadVisitorCountryInfo() {
+      if (!visitorStatsConfig.geoLookupUrl) {
+        return { countryCode: "ZZ", countryName: "Unknown" };
+      }
+
+      try {
+        const payload = await fetchJsonWithTimeout(visitorStatsConfig.geoLookupUrl, 6000);
+        const countryCode = normalizeVisitorCountryCode(
+          payload.country_code || payload.countryCode || payload.country || "ZZ"
+        );
+        const countryName = String(
+          payload.country || payload.country_name || payload.countryName || countryCode
+        ).trim() || countryCode;
+        return { countryCode, countryName };
+      } catch (error) {
+        return { countryCode: "ZZ", countryName: "Unknown" };
+      }
+    }
+
+    async function ensureVisitorMapLoaded() {
+      if (!visitorMapContainer) {
+        return null;
+      }
+
+      if (visitorStatsState.mapSvg) {
+        return visitorStatsState.mapSvg;
+      }
+
+      if (!visitorStatsState.mapPromise) {
+        visitorStatsState.mapPromise = (async () => {
+          const response = await fetch(visitorStatsConfig.mapAssetPath, { cache: "force-cache" });
+          if (!response.ok) {
+            throw new Error(`Could not load ${visitorStatsConfig.mapAssetPath}.`);
+          }
+
+          const rawMarkup = await response.text();
+          const sanitizedMarkup = rawMarkup
+            .replace(/<\?xml[\s\S]*?\?>/i, "")
+            .replace(/<!DOCTYPE[\s\S]*?>/i, "");
+
+          visitorMapContainer.innerHTML = sanitizedMarkup;
+          const svg = visitorMapContainer.querySelector("svg");
+
+          if (!svg) {
+            throw new Error("Map asset did not contain an SVG element.");
+          }
+
+          svg.classList.add("visitor-map-svg");
+          svg.removeAttribute("width");
+          svg.removeAttribute("height");
+          svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+          visitorStatsState.mapSvg = svg;
+          resetVisitorMap(svg);
+          return svg;
+        })();
+      }
+
+      return visitorStatsState.mapPromise;
+    }
+
+    function resetVisitorMap(svg) {
+      if (!svg) {
+        return;
+      }
+
+      svg.querySelectorAll(".landxx, .circlexx, .subxx").forEach((element) => {
+        element.removeAttribute("data-country-code");
+        element.removeAttribute("data-country-name");
+        element.removeAttribute("data-country-count");
+      });
+
+      svg.querySelectorAll(".landxx").forEach((element) => {
+        element.style.fill = "#edf2ed";
+        element.style.stroke = "rgba(107, 114, 128, 0.28)";
+        element.style.strokeWidth = "0.6";
+      });
+
+      svg.querySelectorAll(".circlexx, .subxx").forEach((element) => {
+        element.style.opacity = "1";
+        element.style.fill = "#edf2ed";
+        element.style.stroke = "rgba(107, 114, 128, 0.35)";
+      });
+    }
+
+    function getVisitorCountryElements(svg, code) {
+      if (!svg) {
+        return [];
+      }
+
+      const normalizedCode = normalizeVisitorCountryCode(code).toLowerCase();
+      const escapedCode = escapeCssIdentifier(normalizedCode);
+      const selector = [
+        `.${escapedCode}`,
+        `#${escapedCode}`,
+        `#${escapedCode} .landxx`,
+        `#${escapedCode} .circlexx`,
+        `#${escapedCode} .subxx`
+      ].join(", ");
+      const matches = new Set();
+
+      svg.querySelectorAll(selector).forEach((element) => {
+        if (element.matches("path, circle, ellipse, polygon, rect")) {
+          matches.add(element);
+        }
+
+        if (typeof element.querySelectorAll === "function") {
+          element.querySelectorAll("path, circle, ellipse, polygon, rect").forEach((child) => matches.add(child));
+        }
+      });
+
+      return Array.from(matches);
+    }
+
+    function getVisitorMapFill(count, maxCount) {
+      if (!maxCount || count <= 0) {
+        return "#edf2ed";
+      }
+
+      const ratio = maxCount <= 1 ? 1 : Math.log(count + 1) / Math.log(maxCount + 1);
+      const lightness = 95 - ratio * 45;
+      return `hsl(157 48% ${lightness}%)`;
+    }
+
+    function renderVisitorTopCountries(countries, totalVisits) {
+      if (!countries.length) {
+        setVisitorTopCountriesMarkup('<p class="visitor-empty">No shared visitor data yet.</p>');
+        return;
+      }
+
+      const markup = countries
+        .slice(0, visitorStatsConfig.topCountryCount)
+        .map((entry) => {
+          const percentage = totalVisits > 0 ? ((entry.count / totalVisits) * 100).toFixed(1) : "0.0";
+          return `<div class="visitor-top-item"><span>${escapeHtml(entry.name)}</span><strong>${formatVisitorCount(entry.count)}</strong><small>${percentage}%</small></div>`;
+        })
+        .join("");
+
+      setVisitorTopCountriesMarkup(markup);
+    }
+
+    function renderVisitorMap(data) {
+      const svg = visitorStatsState.mapSvg;
+
+      if (!svg) {
+        return;
+      }
+
+      resetVisitorMap(svg);
+      setVisitorMapHover("Hover a country or region to see the historical count.");
+
+      if (!data.countries.length) {
+        if (visitorMapLegend) {
+          visitorMapLegend.textContent = "No data yet";
+        }
+        return;
+      }
+
+      const maxCount = Math.max(...data.countries.map((entry) => entry.count));
+
+      for (const entry of data.countries) {
+        const fill = getVisitorMapFill(entry.count, maxCount);
+        const countryElements = getVisitorCountryElements(svg, entry.code);
+
+        for (const element of countryElements) {
+          element.dataset.countryCode = entry.code;
+          element.dataset.countryName = entry.name;
+          element.dataset.countryCount = String(entry.count);
+          element.style.fill = fill;
+          if (element.classList.contains("circlexx") || element.classList.contains("subxx")) {
+            element.style.opacity = "1";
+          }
+        }
+      }
+
+      if (visitorMapLegend) {
+        visitorMapLegend.textContent = `${formatVisitorCount(1)} to ${formatVisitorCount(maxCount)} visits`;
+      }
+    }
+
+    function renderVisitorStatsData(data) {
+      if (visitorTotalValue) {
+        visitorTotalValue.textContent = formatVisitorCount(data.totalVisits);
+      }
+
+      if (visitorTotalNote) {
+        visitorTotalNote.textContent = formatVisitorUpdatedAt(data.updatedAt);
+      }
+
+      renderVisitorTopCountries(data.countries, data.totalVisits);
+      renderVisitorMap(data);
+      setVisitorStatsStatus(`Historical visits are grouped by visitor country / region for ${visitorStatsConfig.siteId}.`);
+    }
+
+    function renderVisitorStatsSetupState() {
+      if (visitorTotalValue) {
+        visitorTotalValue.textContent = "-";
+      }
+
+      if (visitorTotalNote) {
+        visitorTotalNote.textContent = "Add a stats endpoint in scripts/visitor-stats-config.js.";
+      }
+
+      setVisitorTopCountriesMarkup(
+        '<p class="visitor-empty">Set <code>endpoint</code> in <code>scripts/visitor-stats-config.js</code> to load shared totals.</p>'
+      );
+
+      if (visitorMapLegend) {
+        visitorMapLegend.textContent = "Awaiting endpoint setup";
+      }
+
+      setVisitorMapHover("Configure the stats endpoint to color the map.");
+      setVisitorStatsStatus("GitHub Pages is static, so shared visitor totals need a tiny endpoint. A Google Apps Script template is included in the repository.");
+    }
+
+    function renderVisitorStatsError(error) {
+      if (visitorTotalValue) {
+        visitorTotalValue.textContent = "-";
+      }
+
+      if (visitorTotalNote) {
+        visitorTotalNote.textContent = "Visitor stats are temporarily unavailable.";
+      }
+
+      setVisitorTopCountriesMarkup(
+        `<p class="visitor-empty">${escapeHtml(error && error.message ? error.message : "Visitor stats are temporarily unavailable.")}</p>`
+      );
+
+      if (visitorMapLegend) {
+        visitorMapLegend.textContent = "Unavailable";
+      }
+
+      setVisitorMapHover("Visitor stats are temporarily unavailable.");
+      setVisitorStatsStatus("The visitor counter could not be reached. The graph explorer itself still works normally.");
+    }
+
+    async function recordAndLoadVisitorStats() {
+      const countryInfo = await loadVisitorCountryInfo();
+      const requestUrl = new URL(visitorStatsConfig.endpoint, window.location.href);
+
+      requestUrl.searchParams.set("action", "hit");
+      requestUrl.searchParams.set("site", visitorStatsConfig.siteId);
+      requestUrl.searchParams.set("country", countryInfo.countryCode);
+      requestUrl.searchParams.set("countryName", countryInfo.countryName);
+      requestUrl.searchParams.set("session", visitorStatsState.sessionId);
+      requestUrl.searchParams.set("path", window.location.pathname || "/");
+
+      return normalizeVisitorStatsPayload(await fetchJsonWithTimeout(requestUrl.toString(), 10000));
+    }
+
+    async function initVisitorStats() {
+      if (!visitorStatsPanel) {
+        return;
+      }
+
+      try {
+        await ensureVisitorMapLoaded();
+
+        if (visitorStatsConfig.demoData) {
+          renderVisitorStatsData(normalizeVisitorStatsPayload(visitorStatsConfig.demoData));
+          setVisitorStatsStatus("Showing preview visitor statistics from demoData.");
+          return;
+        }
+
+        if (!visitorStatsConfig.endpoint) {
+          renderVisitorStatsSetupState();
+          return;
+        }
+
+        setVisitorStatsStatus("Recording this visit and loading the historical totals...");
+        renderVisitorStatsData(await recordAndLoadVisitorStats());
+      } catch (error) {
+        renderVisitorStatsError(error);
+      }
+    }
+
+    function handleVisitorMapPointer(event) {
+      const target = event.target && typeof event.target.closest === "function"
+        ? event.target.closest("[data-country-code]")
+        : null;
+
+      if (!target) {
+        setVisitorMapHover("Hover a country or region to see the historical count.");
+        return;
+      }
+
+      const countryName = target.dataset.countryName || target.dataset.countryCode || "Unknown";
+      const count = formatVisitorCount(target.dataset.countryCount || 0);
+      setVisitorMapHover(`${countryName}: ${count} historical visits.`);
+    }
+
     function updateView() {
       renderGraph();
       renderProperty();
@@ -6834,6 +7324,12 @@
     graphCanvas.addEventListener("pointerup", stopDragging);
     graphCanvas.addEventListener("pointerleave", stopDragging);
     graphCanvas.addEventListener("pointercancel", stopDragging);
+    if (visitorMapContainer) {
+      visitorMapContainer.addEventListener("pointermove", handleVisitorMapPointer);
+      visitorMapContainer.addEventListener("pointerleave", () => {
+        setVisitorMapHover("Hover a country or region to see the historical count.");
+      });
+    }
 
     labelToggle.checked = showLabels;
     derivedEdgeToggle.checked = showDerivedEdges;
@@ -6841,4 +7337,5 @@
     renderSavedGraphs();
     updateSizeOutput();
     updateView();
+    initVisitorStats();
     animate();
