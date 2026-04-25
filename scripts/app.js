@@ -946,6 +946,14 @@
       return matrix;
     }
 
+    function buildLaplacianMatrix() {
+      const adjacencyMatrix = buildAdjacencyMatrix();
+      return adjacencyMatrix.map((row, index) => {
+        const degree = row.reduce((sum, value) => sum + value, 0);
+        return row.map((value, columnIndex) => (index === columnIndex ? degree : -value));
+      });
+    }
+
     function isCompleteGraph() {
       const vertexCount = nodes.length;
       return edges.length === (vertexCount * (vertexCount - 1)) / 2;
@@ -3291,17 +3299,19 @@
       }).join(", ");
     }
 
-    function computeSpectrum() {
+    function computeSpectrum(kind = "adjacency") {
+      const label = kind === "laplacian" ? "Laplacian" : "Adjacency";
+
       if (nodes.length === 0) {
-        spectrumResultText = "∅. The empty graph has no adjacency eigenvalues.";
+        spectrumResultText = `${label}: ∅.`;
         updateView();
         return;
       }
 
-      const matrix = buildAdjacencyMatrix();
+      const matrix = kind === "laplacian" ? buildLaplacianMatrix() : buildAdjacencyMatrix();
       const eigenvalues = jacobiEigenvaluesSymmetric(matrix);
-      spectrumResultText = `${formatSpectrum(eigenvalues)}.`;
-      status.textContent = `Computed adjacency spectrum for ${currentGraphName}.`;
+      spectrumResultText = `${label}: ${formatSpectrum(eigenvalues)}.`;
+      status.textContent = `Computed ${label.toLowerCase()} spectrum for ${currentGraphName}.`;
       updateView();
     }
 
@@ -4089,7 +4099,8 @@
         <div class="minor-finder">
           <label>Spectrum</label>
           <div class="spectrum-controls">
-            <button id="computeSpectrumBtn" type="button">Compute Spectrum</button>
+            <button id="computeSpectrumBtn" type="button">Adjacency</button>
+            <button id="computeLaplacianSpectrumBtn" type="button" class="secondary">Laplacian</button>
           </div>
           <p id="spectrumResult" class="minor-result">${escapeHtml(spectrumResultText)}</p>
         </div>
@@ -6760,10 +6771,11 @@
       return getGraphSnapshotForTest();
     }
 
-    function getSpectrumForTest(description) {
+    function getSpectrumForTest(description, kind = "adjacency") {
       const definition = parseGraphDescription(description);
       setGraphFromDefinition(definition, definition.displayName);
-      return formatSpectrum(jacobiEigenvaluesSymmetric(buildAdjacencyMatrix()));
+      const matrix = kind === "laplacian" ? buildLaplacianMatrix() : buildAdjacencyMatrix();
+      return formatSpectrum(jacobiEigenvaluesSymmetric(matrix));
     }
 
     function findContainmentForTest(hostDescription, targetDescription, mode = "minor") {
@@ -6818,7 +6830,10 @@
       mergeVertices: mergeVerticesForTest,
       parseGraph: parseGraphForTest,
       parseMatrix: parseMatrixForTest,
-      spectrum: getSpectrumForTest
+      spectrum: getSpectrumForTest,
+      laplacianSpectrum(description) {
+        return getSpectrumForTest(description, "laplacian");
+      }
     };
 
     function animate() {
@@ -6953,7 +6968,11 @@
       }
 
       if (event.target && event.target.id === "computeSpectrumBtn") {
-        computeSpectrum();
+        computeSpectrum("adjacency");
+      }
+
+      if (event.target && event.target.id === "computeLaplacianSpectrumBtn") {
+        computeSpectrum("laplacian");
       }
     });
     propertyBox.addEventListener("keydown", (event) => {

@@ -637,9 +637,9 @@
     }
 
     .spectrum-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
     }
 
     .spectrum-controls button {

@@ -242,6 +242,12 @@ The code builds the adjacency matrix `A(G)` and computes its eigenvalues numeric
 
 Formatting is exact-looking when possible: integers are printed as integers; some quadratic surds are recognized by a bounded search with denominator at most `12` and radicand at most `100`; otherwise values are rounded to six decimal places. Multiplicities are displayed as powers, for example `2^{3}`.
 
+### Laplacian Spectrum
+
+Functions: `buildLaplacianMatrix()`, `computeSpectrum("laplacian")`.
+
+The code builds the combinatorial Laplacian `L(G) = D(G) - A(G)`, where `D(G)` is the diagonal degree matrix and `A(G)` is the adjacency matrix. It then runs the same symmetric Jacobi eigensolver and the same formatting/grouping logic used for the adjacency spectrum.
+
 ## Important Limits
 
 Some outputs are exact and some are intentionally bounded. In the UI, a displayed inequality such as `>=` or `<=` means the code did not prove the exact value for the current graph. `Unknown (bounded search)` means the relevant backtracking search hit its step limit before proving either answer.

@@ -962,6 +962,24 @@
       }
     ];
 
+    const laplacianSpectrumCases = [
+      {
+        name: "K3 Laplacian spectrum",
+        description: "K3",
+        expected: "3^{2}, 0"
+      },
+      {
+        name: "P3 Laplacian spectrum",
+        description: "P3",
+        expected: "3, 1, 0"
+      },
+      {
+        name: "C4 Laplacian spectrum",
+        description: "C4",
+        expected: "4, 2^{2}, 0"
+      }
+    ];
+
     const frame = document.getElementById("appFrame");
     const summary = document.getElementById("summary");
     const results = document.getElementById("results");
@@ -1104,6 +1122,14 @@
         const actual = api.spectrum(testCase.description);
         total += 1;
         if (addRow(testCase.name, "spectrum", testCase.expected, actual)) {
+          passed += 1;
+        }
+      }
+
+      for (const testCase of laplacianSpectrumCases) {
+        const actual = api.laplacianSpectrum(testCase.description);
+        total += 1;
+        if (addRow(testCase.name, "Laplacian spectrum", testCase.expected, actual)) {
           passed += 1;
         }
       }
