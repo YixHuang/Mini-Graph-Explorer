@@ -29,12 +29,11 @@ The app is static. GitHub Actions deploys the repository root to GitHub Pages on
 
 ## Visitor Stats
 
-The visitor counter is optional, because GitHub Pages cannot maintain shared visit totals by itself. The frontend now includes a visitor panel with a total-visit card, a top-country list, and a small SVG world map. It expects a lightweight endpoint that returns aggregate counts.
+The visitor counter is optional, because GitHub Pages cannot maintain a shared total by itself. The frontend now includes a small footer-style visitor panel that shows the historical total visit count. It expects a lightweight endpoint that returns aggregate counts.
 
 ### Frontend Files
 
-- `scripts/visitor-stats-config.js`: small config file for the stats endpoint, site id, geo lookup URL, and optional preview `demoData`.
-- `assets/world-map.svg`: vendored world SVG used for the choropleth map.
+- `scripts/visitor-stats-config.js`: small config file for the stats endpoint, site id, and optional preview `demoData`.
 - `visitor-stats/google-apps-script/Code.gs`: minimal Google Apps Script backend template.
 
 ### Endpoint Contract
@@ -42,7 +41,7 @@ The visitor counter is optional, because GitHub Pages cannot maintain shared vis
 The browser calls the configured endpoint with a GET request like:
 
 ```text
-...?action=hit&site=mini-graph-explorer&country=US&countryName=United%20States&session=...&path=/
+...?action=hit&site=mini-graph-explorer&session=...&path=/
 ```
 
 The endpoint should respond with JSON in this shape:
@@ -52,12 +51,6 @@ The endpoint should respond with JSON in this shape:
   "ok": true,
   "siteId": "mini-graph-explorer",
   "totalVisits": 1234,
-  "countries": { "US": 420, "CN": 180, "GB": 65 },
-  "countryNames": {
-    "US": "United States",
-    "CN": "China",
-    "GB": "United Kingdom"
-  },
   "updatedAt": "2026-04-24T18:20:00.000Z"
 }
 ```
@@ -71,6 +64,8 @@ The endpoint should respond with JSON in this shape:
 - per-country display names at `<siteId>:countryNames`
 - last update time at `<siteId>:updatedAt`
 
+The current frontend only displays the total visit count and last update time. The template still keeps the per-country fields so the backend stays backward-compatible with earlier iterations.
+
 It also uses `CacheService` to suppress repeated counts from the same browser session for 20 minutes.
 
 ### Setup Steps
@@ -80,8 +75,6 @@ It also uses `CacheService` to suppress repeated counts from the same browser se
 3. Deploy it as a web app with access set to `Anyone`.
 4. Copy the deployment URL into `scripts/visitor-stats-config.js` as `endpoint`.
 5. Push the updated repo to GitHub Pages.
-
-The frontend uses `https://ipwho.is/` by default to estimate the visitor country code in the browser before sending the hit to the endpoint. If that lookup fails, the visit is recorded under `ZZ`.
 
 ## Shared Conventions
 

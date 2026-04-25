@@ -17,41 +17,6 @@
       </p>
     </section>
 
-    <section id="visitorStatsPanel" class="panel visitor-stats-panel">
-      <div class="visitor-stats-header">
-        <div>
-          <h2>Visitor Stats</h2>
-          <p id="visitorStatsStatus" class="visitor-stats-status">Loading visitor statistics...</p>
-        </div>
-        <a class="readme-link" href="https://github.com/YixHuang/Mini-Graph-Explorer#visitor-stats" target="_blank" rel="noopener noreferrer">Setup stats</a>
-      </div>
-      <div class="visitor-stats-grid">
-        <article class="visitor-summary-card">
-          <span class="visitor-summary-label">Total visits</span>
-          <strong id="visitorTotalValue">-</strong>
-          <span id="visitorTotalNote" class="visitor-summary-note">Waiting for a live counter.</span>
-        </article>
-
-        <article class="visitor-top-card">
-          <div class="visitor-card-heading">Top countries / regions</div>
-          <div id="visitorTopCountries" class="visitor-top-list">
-            <p class="visitor-empty">Waiting for visitor statistics...</p>
-          </div>
-        </article>
-
-        <article class="visitor-map-card">
-          <div class="visitor-map-header">
-            <div class="visitor-card-heading">World map</div>
-            <div id="visitorMapLegend" class="visitor-map-legend">No data yet</div>
-          </div>
-          <div id="visitorMapContainer" class="visitor-map-container">
-            <div class="visitor-map-placeholder">Loading map...</div>
-          </div>
-          <div id="visitorMapHover" class="visitor-map-hover">Hover a country or region to see the historical count.</div>
-        </article>
-      </div>
-    </section>
-
     <section class="panel prompt-panel">
       <div class="prompt-main">
         <div>
@@ -189,6 +154,21 @@
         </div>
         <div id="propertyBox" class="property"></div>
       </section>
+    </section>
+
+    <section id="visitorStatsPanel" class="panel visitor-stats-panel">
+      <div class="visitor-stats-header">
+        <div>
+          <h2>Visits</h2>
+          <p id="visitorStatsStatus" class="visitor-stats-status">Loading visitor statistics...</p>
+        </div>
+        <a class="readme-link" href="https://github.com/YixHuang/Mini-Graph-Explorer#visitor-stats" target="_blank" rel="noopener noreferrer">Setup stats</a>
+      </div>
+      <article class="visitor-summary-card visitor-summary-card-wide">
+        <span class="visitor-summary-label">Total visits</span>
+        <strong id="visitorTotalValue">-</strong>
+        <span id="visitorTotalNote" class="visitor-summary-note">Waiting for a live counter.</span>
+      </article>
     </section>
   </main>
 
