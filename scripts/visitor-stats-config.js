@@ -1,5 +1,5 @@
 window.MiniGraphExplorerVisitorStatsConfig = {
-  endpoint: "",
+  endpoint: "https://script.google.com/macros/s/AKfycbwd9ACkpot6EnaS9qvLfElTr73hbGzfwXzJWeXcvQ0UmepOO_WOyQLMG40AoWDx1eUUhQ/exec",
   siteId: "mini-graph-explorer",
   geoLookupUrl: "https://ipwho.is/",
   mapAssetPath: "assets/world-map.svg",
